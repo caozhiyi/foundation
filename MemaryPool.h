@@ -27,12 +27,16 @@ public:
 	void PoolDelete(T* &c);
 
 	//for continuous memory
-	void* PoolMalloc(size_t size);
-	void PoolFree(void* m, size_t len);
+	template<typename T>
+	T* PoolMalloc(size_t size);
+	template<typename T>
+	void PoolFree(T* &m, size_t len);
 
 	//for bulk memory
-	void* PoolLargeMalloc();
-	void PoolLargeFree(void* m);
+	template<typename T>
+	T* PoolLargeMalloc();
+	template<typename T>
+	void PoolLargeFree(T* &m);
 
 	std::thread::id GetCreateThreadId();
 
@@ -91,8 +95,7 @@ T* CMemaryPool::PoolNew(Args&&... args)
 }
 
 template<typename T>
-void CMemaryPool::PoolDelete(T* &c)
-{
+void CMemaryPool::PoolDelete(T* &c) {
 	if (!c){
 		return;
 	}
@@ -111,6 +114,83 @@ void CMemaryPool::PoolDelete(T* &c)
 	node->_next = *my_free;
 	*my_free = node;
 	c = nullptr;
+}
+
+template<typename T>
+T* CMemaryPool::PoolMalloc(size_t sz) {
+	if (sz > __max_bytes) {
+		void* bytes = malloc(sz);
+		memset(bytes, 0, sz);
+		return (T*)bytes;
+	}
+
+	std::unique_lock<std::mutex> lock(_mutex);
+	MemNode** my_free = &(_free_list[FreeListIndex(sz)]);
+	MemNode* result = *my_free;
+	if (result == nullptr) {
+		void* bytes = ReFill(RoundUp(sz));
+		memset(bytes, 0, sz);
+		return (T*)bytes;
+	}
+
+	*my_free = result->_next;
+	memset(result, 0, sz);
+	return (T*)result;
+}
+
+template<typename T>
+void CMemaryPool::PoolFree(T* &m, size_t len) {
+	if (!m) {
+		return;
+	}
+
+	if (len > __max_bytes) {
+		free(m);
+		m = nullptr;
+		return;
+	}
+
+	MemNode* node = (MemNode*)m;
+	MemNode** my_free = &(_free_list[FreeListIndex(len)]);
+
+	std::unique_lock<std::mutex> lock(_mutex);
+	node->_next = *my_free;
+	*my_free = node;
+	m = nullptr;
+}
+
+template<typename T>
+T* CMemaryPool::PoolLargeMalloc() {
+	if (_number_large_add_nodes == 0 || _large_size == 0) {
+		throw std::exception("Large block of memory is not set!");
+		return nullptr;
+	}
+	std::unique_lock<std::mutex> lock(_mutex);
+	MemNode** my_free = &_free_large;
+	MemNode* result = _free_large;
+	if (result == nullptr) {
+		void* bytes = ReFill(RoundUp(_large_size), _number_large_add_nodes, true);
+		memset(bytes, 0, _large_size);
+		return (T*)bytes;
+	}
+
+	*my_free = result->_next;
+	memset(result, 0, _large_size);
+	return (T*)result;
+}
+
+template<typename T>
+void CMemaryPool::PoolLargeFree(T* &m) {
+	if (!m) {
+		return;
+	}
+	MemNode* node = (MemNode*)m;
+	MemNode** my_free = &_free_large;
+
+	std::unique_lock<std::mutex> lock(_mutex);
+	node->_next = *my_free;
+	*my_free = node;
+	m = nullptr;
 }
 
 #endif
