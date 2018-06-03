@@ -6,7 +6,7 @@ CMemaryPool::CMemaryPool() {
 	_create_thread_id = std::this_thread::get_id();
 }
 
-CMemaryPool::CMemaryPool(const int large_sz, const int add_num) : _large_size(large_sz), _number_large_add_nodes(add_num){
+CMemaryPool::CMemaryPool(const int large_sz, const int add_num) : _large_size(RoundUp(large_sz)), _number_large_add_nodes(add_num){
 	memset(_free_list, 0, sizeof(_free_list[__number_of_free_lists]));
 	_create_thread_id = std::this_thread::get_id();
 }
@@ -24,6 +24,10 @@ std::thread::id CMemaryPool::GetCreateThreadId() {
 	return _create_thread_id;
 }
 
+int CMemaryPool::GetLargeSize() const {
+	return _large_size;
+}
+
 void* CMemaryPool::ReFill(int size, int num, bool is_large) {
 	int nums = num;
 
@@ -35,9 +39,12 @@ void* CMemaryPool::ReFill(int size, int num, bool is_large) {
 	}
 
 	res = (MemNode*)chunk;
-
+	
 	if (is_large) {
-		my_free = &_free_large;
+		if (_free_large.find(size) == _free_large.end()) {
+			_free_large[size] = nullptr;
+		}
+		my_free = &_free_large[size];
 
 		*my_free = next = (MemNode*)(chunk + size);
 		for (int i = 1;; i++) {
@@ -75,8 +82,8 @@ void* CMemaryPool::ReFill(int size, int num, bool is_large) {
 
 void* CMemaryPool::ChunkAlloc(int size, int& nums, bool is_large) {
 	char* res;
-	size_t need_bytes = size * nums;
-	size_t left_bytes = _pool_end - _pool_start;
+	int need_bytes = size * nums;
+	int left_bytes = _pool_end - _pool_start;
 
 	//ÄÚ´æ³Ø¹»ÓÃ
 	if (left_bytes >= need_bytes) {
@@ -92,7 +99,7 @@ void* CMemaryPool::ChunkAlloc(int size, int& nums, bool is_large) {
 		return res;
 
 	} 
-	size_t bytes_to_get = size * nums;
+	int bytes_to_get = size * nums;
 
 	if (!is_large) {
 		if (left_bytes > 0) {
