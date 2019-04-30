@@ -1,18 +1,30 @@
-#include "MemaryPool.h"
 #include <assert.h>
+#include "MemaryPool.h"
+#include "Log.h"
 
-CMemaryPool::CMemaryPool() {
-	memset(_free_list, 0, sizeof(_free_list[__number_of_free_lists]));
+#include <iostream>
+using namespace std;
+
+CMemoryPool::CMemoryPool() {
+	for (int i = 0; i < __number_of_free_lists; i++) {
+		_free_list[i] = nullptr;
+	}
+	_pool_start = nullptr;
+	_pool_end = nullptr;
 	_create_thread_id = std::this_thread::get_id();
 }
 
-CMemaryPool::CMemaryPool(const int large_sz, const int add_num) : _large_size(RoundUp(large_sz)), _number_large_add_nodes(add_num){
-	memset(_free_list, 0, sizeof(_free_list[__number_of_free_lists]));
+CMemoryPool::CMemoryPool(const int large_sz, const int add_num) : _large_size(RoundUp(large_sz)), _number_large_add_nodes(add_num){
+	for (int i = 0; i < __number_of_free_lists; i++) {
+		_free_list[i] = nullptr;
+	}
+	_pool_start = nullptr;
+	_pool_end = nullptr;
 	_create_thread_id = std::this_thread::get_id();
 }
 
-CMemaryPool::~CMemaryPool() {
-	assert(_create_thread_id == std::this_thread::get_id());
+CMemoryPool::~CMemoryPool() {
+	//assert(_create_thread_id == std::this_thread::get_id());
 	for (auto iter = _malloc_vec.begin(); iter != _malloc_vec.end(); ++iter) {
 		if (*iter) {
 			free(*iter);
@@ -20,19 +32,27 @@ CMemaryPool::~CMemaryPool() {
 	}
 }
 
-std::thread::id CMemaryPool::GetCreateThreadId() {
+std::thread::id CMemoryPool::GetCreateThreadId() {
 	return _create_thread_id;
 }
 
-int CMemaryPool::GetLargeSize() const {
+int CMemoryPool::GetLargeSize() const {
 	return _large_size;
 }
 
-void* CMemaryPool::ReFill(int size, int num, bool is_large) {
+void* CMemoryPool::ReFill(int size, int num, bool is_large) {
 	int nums = num;
 
-	char* chunk = (char*)ChunkAlloc(size, nums);
-	MemNode** my_free;
+	char* chunk = nullptr;
+	try {
+		chunk = (char*)ChunkAlloc(size, nums);
+
+	} catch (const std::exception& e) {
+		LOG_FATAL("malloc memory failed! info : %s", e.what());
+		abort();
+	}
+	
+	MemNode* volatile* my_free;
 	MemNode* res, *current, *next;
 	if (1 == nums) {
 		return chunk;
@@ -54,8 +74,7 @@ void* CMemaryPool::ReFill(int size, int num, bool is_large) {
 				current->_next = nullptr;
 				break;
 
-			}
-			else {
+			} else {
 				current->_next = next;
 			}
 		}
@@ -71,8 +90,7 @@ void* CMemaryPool::ReFill(int size, int num, bool is_large) {
 				current->_next = nullptr;
 				break;
 
-			}
-			else {
+			} else {
 				current->_next = next;
 			}
 		}
@@ -80,12 +98,12 @@ void* CMemaryPool::ReFill(int size, int num, bool is_large) {
 	return res;
 }
 
-void* CMemaryPool::ChunkAlloc(int size, int& nums, bool is_large) {
+void* CMemoryPool::ChunkAlloc(int size, int& nums, bool is_large) {
 	char* res;
 	int need_bytes = size * nums;
 	int left_bytes = _pool_end - _pool_start;
 
-	//ƒ⁄¥Ê≥ÿπª”√
+	//pool is enough
 	if (left_bytes >= need_bytes) {
 		res = _pool_start;
 		_pool_start += need_bytes;
@@ -109,15 +127,17 @@ void* CMemaryPool::ChunkAlloc(int size, int& nums, bool is_large) {
 		}
 
 	} else {
-		free(_pool_start);
+		MemNode* volatile* my_free = &_free_list[FreeListIndex(left_bytes)];
+		((MemNode*)_pool_start)->_next = *my_free;
+		*my_free = (MemNode*)_pool_start;
 	}
-	
 
 	_pool_start = (char*)malloc(bytes_to_get);
-	
-	//ƒ⁄¥Ê∑÷≈‰ ß∞‹
+	//malloc failed
 	if (0 == _pool_start) {
-		throw std::exception("There memary is not enough!");
+		throw std::exception(std::logic_error("There memary is not enough!"));
+		cout << "There memary is not enough!" << endl;
+		return nullptr;
 	}
 
 	_malloc_vec.push_back(_pool_start);

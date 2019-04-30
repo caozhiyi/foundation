@@ -1,6 +1,79 @@
-#pragma once
+#ifndef HEADER_CPOOLSHAREDPTR
+#define HEADER_CPOOLSHAREDPTR
 #include <atomic>
 #include <functional>
+#include <stddef.h>
+
+#include "MemaryPool.h"
+
+class CRefCount;
+template<class T>
+class CMemWeakPtr;
+template<class T>
+class CMemSharePtr;
+
+
+enum MemoryType {
+	TYPE_NEW = 0x00,
+	TYPE_MALLOC = 0x01,
+	TYPE_LARGE = 0x02,
+	TYPE_LARGE_WITH_SIZE = 0x03
+};
+
+template<class Ty>
+class CEnableSharedFromThis {
+public:
+	typedef Ty _EStype;
+	CMemSharePtr<Ty> memshared_from_this() {
+		return (_weak_ptr.Lock());
+	}
+
+protected:
+	constexpr CEnableSharedFromThis() noexcept {
+	}
+
+	CEnableSharedFromThis(const CEnableSharedFromThis&) noexcept {
+	}
+
+	CEnableSharedFromThis& operator=(const CEnableSharedFromThis&) noexcept {
+		return (*this);
+	}
+
+	~CEnableSharedFromThis() noexcept {
+	}
+
+private:
+	template<class T1, class T2>
+	friend void DoEnable(T1 *ptr, CEnableSharedFromThis<T2> *es, CRefCount *ref_ptr, CMemoryPool* pool, int size, MemoryType type);
+	CMemWeakPtr<Ty> _weak_ptr;
+};
+
+// reset internal weak pointer
+template<class T1, class T2>
+inline void DoEnable(T1 *ptr, CEnableSharedFromThis<T2> *es, CRefCount *ref_ptr, CMemoryPool* pool = nullptr, int size = 0, MemoryType type = TYPE_NEW) {
+	es->_weak_ptr.Resetw(ptr, ref_ptr, pool, size, type);
+}
+
+//not useful on gcc.
+//template<typename T>
+//struct has_member_weak_ptr {
+//	template <typename _T>
+//	static auto check(_T)->typename std::decay<decltype(_T::_weak_ptr)>::type;
+//	static void check(...);
+//	using type = decltype(check(std::declval<T>()));
+//	enum { value = !std::is_void<type>::value };
+//};
+
+template<class Ty>
+inline void EnableShared(Ty *ptr, CRefCount *ref_ptr, CMemoryPool* pool = nullptr, int size = 0, MemoryType type = TYPE_NEW, typename Ty::_EStype * = 0) {
+	if (ptr) {
+		DoEnable(ptr, (CEnableSharedFromThis<typename Ty::_EStype>*)ptr, ref_ptr, pool, size, type);
+	}
+}
+
+inline void EnableShared(const volatile void *, const volatile void *, CMemoryPool* pool = nullptr, int size = 0, MemoryType type = TYPE_NEW) {
+
+}
 
 //reference count class
 class CRefCount {
@@ -42,6 +115,11 @@ public:
 		return _uses;
 	}
 
+	// return weak count
+	long GetWeakCount() const {
+		return _weaks;
+	}
+
 	// return true if _uses == 0
 	bool Expired() const  {	
 		return (_uses == 0);
@@ -56,48 +134,63 @@ private:
 template<typename T>
 class CBasePtr {
 public:
-	typedef CBasePtr<T>					_BasePtr;
-	typedef std::function<void(T*&)>	_PtrDeleter;
-	typedef std::function<void(CRefCount*&)>	_RefDeleter;
-	typedef std::pair<_PtrDeleter, _RefDeleter> _Deleter;
+	typedef CBasePtr<T>	 _BasePtr;
 
 	// construct
-	CBasePtr() noexcept : _ptr(0), _ref_count(0), _deleter(std::make_pair(nullptr, nullptr)){}
-	CBasePtr(T* ptr, CRefCount* ref) noexcept : _ptr(ptr), _ref_count(ref), _deleter(std::make_pair(nullptr, nullptr)) {}
-	CBasePtr(T* ptr, CRefCount* ref, _Deleter& func) noexcept : _ptr(ptr), _ref_count(ref), _deleter(func) {}
+	CBasePtr() noexcept : _ptr(nullptr), _ref_count(nullptr), _pool(nullptr) {
+		EnableShared(_ptr, _ref_count, _pool);
+	}
+	CBasePtr(T* ptr, CRefCount* ref, CMemoryPool* pool, MemoryType type, int large_size = 0) noexcept : _ptr(ptr), _ref_count(ref), _pool(pool), _memory_type(type), _malloc_size(large_size) {
+		EnableShared(_ptr, _ref_count, _pool, _malloc_size, _memory_type);
+	}
 
 
 	// construct CBasePtr object that takes resource from _Right
-	CBasePtr(const _BasePtr& r) : _ptr(r._ptr), _ref_count(r._ref_count), _deleter(r._deleter) {
+	CBasePtr(const _BasePtr& r) : _ptr(r._ptr), _ref_count(r._ref_count), _pool(r._pool), _memory_type(r._memory_type), _malloc_size(r._malloc_size) {
 		if (_ref_count) {
 			_ref_count->IncrefUse();
 		}
+		EnableShared(_ptr, _ref_count, _pool, _malloc_size, _memory_type);
 	}
 
 	// construct CBasePtr object that takes resource from _Right
-	CBasePtr(_BasePtr&& r) : _ptr(r._ptr), _ref_count(r._ref_count), _deleter(r._deleter) {
+	CBasePtr(_BasePtr&& r) : _ptr(r._ptr), _ref_count(r._ref_count), _pool(r._pool), _memory_type(r._memory_type), _malloc_size(r._malloc_size) {
 		r._ptr			= nullptr;
 		r._ref_count	= nullptr;
-		r._deleter		= std::make_pair(nullptr, nullptr);
+		r._pool			= nullptr;
+		_malloc_size	= 0;
+		EnableShared(_ptr, _ref_count, _pool, _malloc_size, _memory_type);
 	}
 
 	// construct CBasePtr object that takes resource from _Right
 	_BasePtr& operator=(_BasePtr&& r) {
-		_ptr			= r._ptr;
-		_ref_count		= r._ref_count;
-		_deleter		= r._deleter;
+		if (_ref_count) {
+			_ref_count->DecrefUse();
+		}
+		_ptr = r._ptr;
+		_ref_count = r._ref_count;
+		_pool = r._pool;
+		_memory_type = r._memory_type;
+		_malloc_size = r._malloc_size;
 
-		r._ptr		    = nullptr;
-		r._ref_count    = nullptr;
-		r._deleter		= std::make_pair(nullptr, nullptr);
+		r._ptr = nullptr;
+		r._ref_count = nullptr;
+		r._pool = nullptr;
+		r._malloc_size = 0;
 		return (*this);
 	}
 
 	// construct CBasePtr object that takes resource from _Right
 	_BasePtr& operator=(const _BasePtr& r) {
+		if (_ref_count) {
+			_ref_count->DecrefUse();
+		}
+
 		_ptr		 = r._ptr;
 		_ref_count   = r._ref_count;
-		_deleter	 = r._deleter;
+		_memory_type = r._memory_type;
+		_malloc_size = r._malloc_size;
+		_pool		 = r._pool;
 		if (_ref_count) {
 			_ref_count->IncrefUse();
 		}
@@ -110,12 +203,13 @@ public:
 	}
 
 	// return pointer to resource
-	T* Get() const noexcept {	
+	T* Get() noexcept {
+		std::unique_lock<std::mutex> lock(_mutex);
 		return (_ptr);
 	}
 
 	// test if expired
-	bool Expired() const noexcept {	
+	bool Expired() noexcept {
 		return (!_ref_count || _ref_count->Expired());
 	}
 
@@ -126,14 +220,12 @@ public:
  
 	// release resource and take ownership from CMemWeakPtr _Other._Ptr
 	void Reset(const _BasePtr& other) {
-		Reset(other._ptr, other._ref_count, other._deleter);
+		Reset(other._ptr, other._ref_count, other._pool);
 	}
 
 	// release resource and take _Other_ptr through _Other_rep
-	void Reset(T *other_ptr, CRefCount * other_rep, _Deleter& deleter) {	
-		if (other_rep)
-			other_rep->IncrefUse();
-		_Reset0(other_ptr, other_rep, deleter);
+	void Reset(T *other_ptr, CRefCount * other_rep, CMemoryPool* pool) {	
+		_Reset0(other_ptr, other_rep, pool);
 	}
 
 	// release weak reference to resource
@@ -143,39 +235,53 @@ public:
 
 	// release weak reference to resource and take _Other._Ptr
 	void Resetw(_BasePtr& other) {
-		Resetw(other._ptr, other._ref_count, other._deleter);
+		Resetw(other._ptr, other._ref_count, other._pool);
 	}
 
-	void Resetw(T *other_ptr, CRefCount *other_rep, _Deleter& func) {
-		if (other_rep)
-			other_rep->IncrefWeak();
-		_Resetw0(other_ptr, other_rep, func);
+	void Resetw(T *other_ptr, CRefCount *other_rep, CMemoryPool* pool) {
+		_Resetw0(other_ptr, other_rep, pool);
 	}
 
-protected:
+	void Resetw(T *other_ptr, CRefCount *other_rep, CMemoryPool* pool, int size, MemoryType type) {
+		_Resetw0(other_ptr, other_rep, pool, type, size);
+	}
+
+public:
 	// release resource and take _Other_ptr through _Other_rep
 	void Reset(T *other_ptr, CRefCount * other_rep) {
-		if (other_rep)
-			other_rep->IncrefUse();
 		_Reset0(other_ptr, other_rep);
 	}
 
 	// release resource and take new resource
 	void _Reset0(T *other_ptr, CRefCount *other_rep) {
-		_DecrefUse();
+		if (other_rep) {
+			other_rep->IncrefUse();
+		}
+		if (_ref_count && _ref_count->GetUseCount() > 0) {
+			_DecrefUse();
+		}
 
+		std::unique_lock<std::mutex> lock(_mutex);
 		_ref_count = other_rep;
 		_ptr	   = other_ptr;
-		_deleter   = std::make_pair(nullptr, nullptr);
+		_pool	   = nullptr;
 	}
 
 	// release resource and take new resource
-	void _Reset0(T *other_ptr, CRefCount *other_rep, _Deleter& func) {
-		_DecrefUse();
-			
-		_ref_count	= other_rep;
-		_ptr		= other_ptr;
-		_deleter	= std::make_pair(nullptr, nullptr);
+	void _Reset0(T *other_ptr, CRefCount *other_rep, CMemoryPool* pool, int size = 0, MemoryType type = TYPE_NEW) {
+		if (other_rep) {
+			other_rep->IncrefUse();
+		}
+		if (_ref_count && _ref_count->GetUseCount() > 0) {
+			_DecrefUse();
+		}
+
+		std::unique_lock<std::mutex> lock(_mutex);
+		_ref_count	 = other_rep;
+		_ptr		 = other_ptr;
+		_pool		 = pool;
+		_malloc_size = size;
+		_memory_type = type;
 	}
 
 	// decrement use reference count
@@ -194,62 +300,107 @@ protected:
 
 	// point to _Other_ptr through _Other_rep
 	void _Resetw(T *other_ptr, CRefCount *other_rep) {	
-		if (other_rep)
-			other_rep->IncrefWeak();
 		_Resetw0(other_ptr, other_rep);
 	}
 
 	// release resource and take new resource
 	void _Resetw0(T *other_ptr, CRefCount *other_rep) {
-		_DecrefWeak();
+		if (other_rep) {
+			other_rep->IncrefWeak();
+		}
+		if (_ref_count && _ref_count->GetWeakCount() > 0) {
+			_DecrefWeak();
+		}
 
+		std::unique_lock<std::mutex> lock(_mutex);
 		_ref_count	= other_rep;
 		_ptr		= other_ptr;
-		_deleter	= std::make_pair(nullptr, nullptr);
+		_pool		= nullptr;
 	}
 
 	// release resource and take new resource
-	void _Resetw0(T *other_ptr, CRefCount *other_rep, _Deleter& func) {
-		_DecrefWeak();
+	void _Resetw0(T *other_ptr, CRefCount *other_rep, CMemoryPool* pool) {
+		if (other_rep) {
+			other_rep->IncrefWeak();
+		}
+		if (_ref_count && _ref_count->GetWeakCount() > 0) {
+			_DecrefWeak();
+		}
 
+		std::unique_lock<std::mutex> lock(_mutex);
 		_ref_count	= other_rep;
 		_ptr		= other_ptr;
-		_deleter	= func;
+		_pool		= pool;
+	}
+
+	// release resource and take new resource
+	void _Resetw0(T *other_ptr, CRefCount *other_rep, CMemoryPool* pool, MemoryType type, int size) {
+		if (other_rep) {
+			other_rep->IncrefWeak();
+		}
+		if (_ref_count && _ref_count->GetWeakCount() > 0) {
+			_DecrefWeak();
+		}
+
+		std::unique_lock<std::mutex> lock(_mutex);
+		_ref_count	 = other_rep;
+		_ptr		 = other_ptr;
+		_pool		 = pool;
+		_memory_type = type;
+		_malloc_size = size;
 	}
 
 	//release resource
-	virtual void _Destroy() noexcept {
-		if (_deleter.first) {
-			_deleter.first(_ptr);
-		}
-		if (_deleter.second) {
-			_deleter.second(_ref_count);
+	void _Destroy() noexcept {
+		if (_pool) {
+			switch (_memory_type) {
+			case TYPE_MALLOC:
+				_pool->PoolFree<T>(_ptr, _malloc_size);
+				break;
+			case TYPE_LARGE:
+				_pool->PoolLargeFree<T>(_ptr);
+				break;
+			case TYPE_LARGE_WITH_SIZE:
+				_pool->PoolLargeFree<T>(_ptr, _malloc_size);
+				break;
+			case TYPE_NEW:
+				_pool->PoolDelete<T>(_ptr);
+				break;
+			}
+
+			_pool->PoolDelete<CRefCount>(_ref_count);
 		}
 	}
 
-	virtual void _DestroyThis() noexcept {
+	void _DestroyThis() noexcept {
 		
 	}
 
 	virtual ~CBasePtr() {}
 
 protected:
-	T			*_ptr;
+	T			*_ptr;			//real data ptr
 	CRefCount	*_ref_count;
-	std::pair<_PtrDeleter, _RefDeleter> _deleter;
+	CMemoryPool	*_pool;			//base memory pool
+
+	int			_malloc_size;	//if malloc large memory from pool. that use to free
+	MemoryType	_memory_type;	//malloc memory type from pool
+
+	std::mutex	_mutex;
 };
 
 // class for reference counted resource management
 template<class T>
 class CMemSharePtr : public CBasePtr<T> {	
 public:
+	typedef CBasePtr<T>	 _BasePtr;
 	// construct
-	CMemSharePtr() noexcept : CBasePtr() {}
-	CMemSharePtr(T* ptr, CRefCount* ref) noexcept : CBasePtr(ptr, ref) {}
-	CMemSharePtr(T* ptr, CRefCount* ref, _Deleter& func) noexcept : CBasePtr(ptr, ref, func) {}
+	CMemSharePtr() noexcept : _BasePtr() {}
+	CMemSharePtr(nullptr_t) noexcept : _BasePtr() {}
+	CMemSharePtr(T* ptr, CRefCount* ref, CMemoryPool* pool, MemoryType type, int large_size = 0) noexcept : _BasePtr(ptr, ref, pool, type, large_size) {}
 
-	CMemSharePtr(const _BasePtr& r) : CBasePtr(r) {}
-	CMemSharePtr(_BasePtr&& r) : CBasePtr(r) {}
+	CMemSharePtr(const _BasePtr& r) : _BasePtr(r) {}
+	CMemSharePtr(_BasePtr&& r) : _BasePtr(r) {}
 
 	CMemSharePtr& operator=(_BasePtr&& r) {
 		_BasePtr::operator=(r);
@@ -261,36 +412,32 @@ public:
 		return (*this);
 	}
 
-	~CMemSharePtr() {	
+	~CMemSharePtr() {
 		this->_DecrefUse();
 	}
 
 	_BasePtr& operator==(const _BasePtr& r) noexcept {
-		return _ptr == r._ptr;
+		return this->_ptr == r._ptr;
 	}
 
 	// return pointer to resource
-	T *operator->() const noexcept {
+	T *operator->() noexcept {
 		return (this->Get());
 	}
 
-	template<typename T2>
-	T2 *operator->() const noexcept {
-		return dynamic_cast<T2*>(this->Get());
-	}
-
 	// return pointer to resource
-	T operator*() const noexcept {
+	T& operator*() noexcept {
 		return (*(this->Get()));
 	}
 
 	// return true if no other CMemSharePtr object owns this resource
 	bool unique() const noexcept {
+		std::unique_lock<std::mutex> lock(this->_mutex);
 		return (this->UseCount() == 1);
 	}
 
 	// test if CMemSharePtr object owns no resource
-	explicit operator bool() const noexcept {
+	explicit operator bool() noexcept {
 		return (this->Get() != 0);
 	}
 };
@@ -300,23 +447,30 @@ public:
 template<class T>
 class CMemWeakPtr : public CBasePtr<T> {
 public:
+	typedef CBasePtr<T>	 _BasePtr;
 	CMemWeakPtr() {
-		Resetw();
+		this->Resetw();
 	}
 
 	CMemWeakPtr(_BasePtr& r) {
-		Resetw(r);
+		this->Resetw(r);
 	}
 
 	// construct CBasePtr object that takes resource from _Right
-	CMemWeakPtr& operator=(_BasePtr&& r) {
+	CMemWeakPtr<T>& operator=(_BasePtr&& r) {
 		_BasePtr::operator=(r);
 		return (*this);
 	}
 
 	// construct CBasePtr object that takes resource from _Right
-	CMemWeakPtr& operator=(_BasePtr& r) {
-		Resetw(r);
+	CMemWeakPtr<T>& operator=(CMemSharePtr<T>& r) {
+		this->Resetw(r);
+		return (*this);
+	}
+
+	// construct CBasePtr object that takes resource from _Right
+	CMemWeakPtr<T>& operator=(CMemWeakPtr<T>& r) {
+		this->Resetw(r);
 		return (*this);
 	}
 
@@ -326,42 +480,48 @@ public:
 	}
 
 	// convert to CMemSharePtr
-	CMemSharePtr<T> Lock() const noexcept {
-		if (Expired()) {
+	CMemSharePtr<T> Lock() noexcept {
+		//std::unique_lock<std::mutex> lock(this->_mutex);
+		if (this->Expired()) {
 			return CMemWeakPtr();
 		}
 		return (CMemSharePtr<T>(*this));
 	}
+
+	// test if CMemSharePtr object owns no resource
+	explicit operator bool() noexcept {
+		return (this->Get() != 0);
+	}
 };
 
+//new object on pool
 template<typename T, typename... Args >
-CMemSharePtr<T> MakeNewSharedPtr(CMemaryPool& pool, Args&&... args) {
-	T* o = pool.PoolNew<T>(std::forward<Args>(args)...);
-	CRefCount* ref = pool.PoolNew<CRefCount>();
-	std::pair<std::function<void(T*&)>, std::function<void(CRefCount*&)>> del = std::make_pair(std::bind(&CMemaryPool::PoolDelete<T>, &pool, std::placeholders::_1), std::bind(&CMemaryPool::PoolDelete<CRefCount>, &pool, std::placeholders::_1));
-	return CMemSharePtr<T>(o, ref, del);
+CMemSharePtr<T> MakeNewSharedPtr(CMemoryPool* pool, Args&&... args) {
+	T* o = pool->PoolNew<T>(std::forward<Args>(args)...);
+	CRefCount* ref = pool->PoolNew<CRefCount>();
+	return CMemSharePtr<T>(o, ref, pool, TYPE_NEW);
+}
+
+//malloc from pool
+template<typename T>
+CMemSharePtr<T> MakeMallocSharedPtr(CMemoryPool* pool, int size) {
+	T* o = (T*)pool->PoolMalloc<T>(size);
+	CRefCount* ref = pool->PoolNew<CRefCount>();
+	return CMemSharePtr<T>(o, ref, pool, TYPE_MALLOC, size);
+}
+
+//malloc large memory from pool
+template<typename T>
+CMemSharePtr<T> MakeLargeSharedPtr(CMemoryPool* pool) {
+	T* o = pool->PoolLargeMalloc<T>();
+	CRefCount* ref = pool->PoolNew<CRefCount>();
+	return CMemSharePtr<T>(o, ref, pool, TYPE_LARGE);
 }
 
 template<typename T>
-CMemSharePtr<T> MakeMallocSharedPtr(CMemaryPool& pool, int size) {
-	T* o = (T*)pool.PoolMalloc<T>(size);
-	CRefCount* ref = pool.PoolNew<CRefCount>();
-	std::pair<std::function<void(T*&)>, std::function<void(CRefCount*&)>> del = std::make_pair(std::bind(&CMemaryPool::PoolFree<T>, &pool, std::placeholders::_1, size), std::bind(&CMemaryPool::PoolDelete<CRefCount>, &pool, std::placeholders::_1));
-	return CMemSharePtr<T>(o, ref, del);
+CMemSharePtr<T> MakeLargeSharedPtr(CMemoryPool* pool, int size) {
+	T* o = pool->PoolLargeMalloc<T>(size);
+	CRefCount* ref = pool->PoolNew<CRefCount>();
+	return CMemSharePtr<T>(o, ref, pool, TYPE_LARGE_WITH_SIZE, size);
 }
-
-template<typename T>
-CMemSharePtr<T> MakeLargeSharedPtr(CMemaryPool& pool) {
-	T* o = pool.PoolLargeMalloc<T>();
-	CRefCount* ref = pool.PoolNew<CRefCount>();
-	std::pair<std::function<void(T*&)>, std::function<void(CRefCount*&)>> del = std::make_pair(std::bind(&CMemaryPool::PoolLargeFree<T>, &pool, std::placeholders::_1), std::bind(&CMemaryPool::PoolDelete<CRefCount>, &pool, std::placeholders::_1));
-	return CMemSharePtr<T>(o, ref, del);
-}
-
-template<typename T>
-CMemSharePtr<T> MakeLargeSharedPtr(CMemaryPool& pool, int size) {
-	T* o = pool.PoolLargeMalloc<T>(size);
-	CRefCount* ref = pool.PoolNew<CRefCount>();
-	std::pair<std::function<void(T*&)>, std::function<void(CRefCount*&)>> del = std::make_pair(std::bind(&CMemaryPool::PoolLargeFree<T>, &pool, std::placeholders::_1, size), std::bind(&CMemaryPool::PoolDelete<CRefCount>, &pool, std::placeholders::_1));
-	return CMemSharePtr<T>(o, ref, del);
-}
+#endif
