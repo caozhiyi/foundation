@@ -17,3 +17,5 @@ build/
 *.pro
 *.user
 *bug
+CMakeFiles
+gtest
