@@ -48,4 +48,5 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
 add_library(${PROJECT_NAME} STATIC ${src_files})
 
+add_subdirectory(third/gtest)
 add_subdirectory(utest)
