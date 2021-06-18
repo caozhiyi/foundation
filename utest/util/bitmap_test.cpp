@@ -1,14 +1,14 @@
 #include <gtest/gtest.h>
-#include "common/util/bitmap.h"
+#include "foundation/util/bitmap.h"
 
 TEST(bitmap_utest, init) {
-    quicx::Bitmap bm;
+    fdan::Bitmap bm;
     EXPECT_TRUE(bm.Init(64));
     EXPECT_TRUE(bm.Init(100));
 }
 
 TEST(bitmap_utest, insert) {
-    quicx::Bitmap bm;
+    fdan::Bitmap bm;
 
     EXPECT_TRUE(bm.Init(100));
 
@@ -17,7 +17,7 @@ TEST(bitmap_utest, insert) {
 }
 
 TEST(bitmap_utest, remove) {
-    quicx::Bitmap bm;
+    fdan::Bitmap bm;
 
     EXPECT_TRUE(bm.Init(100));
 
@@ -30,7 +30,7 @@ TEST(bitmap_utest, remove) {
 
 
 TEST(bitmap_utest, minafter) {
-    quicx::Bitmap bm;
+    fdan::Bitmap bm;
     EXPECT_TRUE(bm.Init(100));
 
     EXPECT_TRUE(bm.Insert(20));

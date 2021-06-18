@@ -1,13 +1,13 @@
 #include <gtest/gtest.h>
 
 #include "common.h"
-#include "common/timer/timer.h"
+#include "foundation/timer/timer.h"
 
 TEST(timer1ms_utest, addtimer1) {
     auto solt = std::make_shared<TimerSoltIns>();
-    auto timer = quicx::MakeTimer50Ms();
+    auto timer = fdan::MakeTimer50Ms();
 
-    EXPECT_TRUE(timer->AddTimer(solt, 30 * quicx::MILLISECOND));
+    EXPECT_TRUE(timer->AddTimer(solt, 30 * fdan::MILLISECOND));
 }
 
 TEST(timer1ms_utest, addtimer2) {
@@ -15,12 +15,12 @@ TEST(timer1ms_utest, addtimer2) {
     auto solt2 = std::make_shared<TimerSoltIns>();
     auto solt3 = std::make_shared<TimerSoltIns>();
     auto solt4 = std::make_shared<TimerSoltIns>();
-    auto timer = quicx::MakeTimer50Ms();
+    auto timer = fdan::MakeTimer50Ms();
 
-    EXPECT_TRUE(timer->AddTimer(solt1, 10 * quicx::MILLISECOND, true));
-    EXPECT_TRUE(timer->AddTimer(solt2, 30 * quicx::MILLISECOND));
-    EXPECT_TRUE(timer->AddTimer(solt3, 40 * quicx::MILLISECOND));
-    EXPECT_FALSE(timer->AddTimer(solt4, 50 * quicx::MILLISECOND));
+    EXPECT_TRUE(timer->AddTimer(solt1, 10 * fdan::MILLISECOND, true));
+    EXPECT_TRUE(timer->AddTimer(solt2, 30 * fdan::MILLISECOND));
+    EXPECT_TRUE(timer->AddTimer(solt3, 40 * fdan::MILLISECOND));
+    EXPECT_FALSE(timer->AddTimer(solt4, 50 * fdan::MILLISECOND));
 }
 
 TEST(timer1ms_utest, rmtimer) {
@@ -28,12 +28,12 @@ TEST(timer1ms_utest, rmtimer) {
     auto solt2 = std::make_shared<TimerSoltIns>();
     auto solt3 = std::make_shared<TimerSoltIns>();
     auto solt4 = std::make_shared<TimerSoltIns>();
-    auto timer = quicx::MakeTimer50Ms();
+    auto timer = fdan::MakeTimer50Ms();
 
-    EXPECT_TRUE(timer->AddTimer(solt1, 10 * quicx::MILLISECOND, true));
-    EXPECT_TRUE(timer->AddTimer(solt2, 30 * quicx::MILLISECOND));
-    EXPECT_TRUE(timer->AddTimer(solt3, 40 * quicx::MILLISECOND));
-    EXPECT_FALSE(timer->AddTimer(solt4, 50 * quicx::MILLISECOND));
+    EXPECT_TRUE(timer->AddTimer(solt1, 10 * fdan::MILLISECOND, true));
+    EXPECT_TRUE(timer->AddTimer(solt2, 30 * fdan::MILLISECOND));
+    EXPECT_TRUE(timer->AddTimer(solt3, 40 * fdan::MILLISECOND));
+    EXPECT_FALSE(timer->AddTimer(solt4, 50 * fdan::MILLISECOND));
     
     EXPECT_TRUE(timer->RmTimer(solt1));
     EXPECT_TRUE(timer->RmTimer(solt2));
@@ -46,12 +46,12 @@ TEST(timer1ms_utest, mintime) {
     auto solt2 = std::make_shared<TimerSoltIns>();
     auto solt3 = std::make_shared<TimerSoltIns>();
     auto solt4 = std::make_shared<TimerSoltIns>();
-    auto timer = quicx::MakeTimer50Ms();
+    auto timer = fdan::MakeTimer50Ms();
 
-    EXPECT_TRUE(timer->AddTimer(solt1, 10 * quicx::MILLISECOND, true));
-    EXPECT_TRUE(timer->AddTimer(solt2, 30 * quicx::MILLISECOND));
-    EXPECT_TRUE(timer->AddTimer(solt3, 40 * quicx::MILLISECOND));
-    EXPECT_FALSE(timer->AddTimer(solt4, 50 * quicx::MILLISECOND));
+    EXPECT_TRUE(timer->AddTimer(solt1, 10 * fdan::MILLISECOND, true));
+    EXPECT_TRUE(timer->AddTimer(solt2, 30 * fdan::MILLISECOND));
+    EXPECT_TRUE(timer->AddTimer(solt3, 40 * fdan::MILLISECOND));
+    EXPECT_FALSE(timer->AddTimer(solt4, 50 * fdan::MILLISECOND));
 
     EXPECT_EQ(10, timer->MinTime());
 
@@ -67,11 +67,11 @@ TEST(timer1ms_utest, timerrun) {
     auto solt2 = std::make_shared<TimerSoltIns>();
     auto solt3 = std::make_shared<TimerSoltIns>();
     auto solt4 = std::make_shared<TimerSoltIns>();
-    auto timer = quicx::MakeTimer50Ms();
+    auto timer = fdan::MakeTimer50Ms();
 
-    EXPECT_TRUE(timer->AddTimer(solt1, 20 * quicx::MILLISECOND, true));
-    EXPECT_TRUE(timer->AddTimer(solt2, 30 * quicx::MILLISECOND));
-    EXPECT_TRUE(timer->AddTimer(solt3, 36 * quicx::MILLISECOND));
+    EXPECT_TRUE(timer->AddTimer(solt1, 20 * fdan::MILLISECOND, true));
+    EXPECT_TRUE(timer->AddTimer(solt2, 30 * fdan::MILLISECOND));
+    EXPECT_TRUE(timer->AddTimer(solt3, 36 * fdan::MILLISECOND));
 
     EXPECT_EQ(20, timer->MinTime());
 

@@ -4,7 +4,7 @@
 #include <chrono>
 #include <string>
 
-namespace quicx {
+namespace fdan {
 
 class TimeConsuming {
 public:

@@ -1,7 +1,7 @@
 #include <iostream>
 #include "time_consuming.h"
 
-namespace quicx {
+namespace fdan {
 
 TimeConsuming::TimeConsuming(std::string name) : _name(name),
     _start_time(std::chrono::system_clock::now()) {

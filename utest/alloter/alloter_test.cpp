@@ -1,7 +1,7 @@
 #include <mutex>
 #include <thread>
 #include <gtest/gtest.h>
-#include "common/alloter/pool_alloter.h"
+#include "foundation/alloter/pool_alloter.h"
 
 uint32_t __alloter_test_value = 0;
 class AlloterTestClass {
@@ -17,7 +17,7 @@ public:
 };
 
 TEST(alloter_utest, warp1) {
-    quicx::AlloterWrap alloter(std::shared_ptr<quicx::Alloter>(new quicx::PoolAlloter()));
+    fdan::AlloterWrap alloter(std::shared_ptr<fdan::Alloter>(new fdan::PoolAlloter()));
     AlloterTestClass* at = alloter.PoolNew<AlloterTestClass>(100);
     ASSERT_EQ(100, at->_data);
     alloter.PoolDelete<AlloterTestClass>(at);
@@ -26,7 +26,7 @@ TEST(alloter_utest, warp1) {
 
 
 TEST(alloter_utest, warp2) {
-    quicx::AlloterWrap alloter(std::shared_ptr<quicx::Alloter>(new quicx::PoolAlloter()));
+    fdan::AlloterWrap alloter(std::shared_ptr<fdan::Alloter>(new fdan::PoolAlloter()));
     {
         auto at = alloter.PoolNewSharePtr<AlloterTestClass>(100);
         ASSERT_EQ(100, at->_data);
@@ -35,7 +35,7 @@ TEST(alloter_utest, warp2) {
 }
 
 TEST(alloter_utest, warp3) {
-    quicx::AlloterWrap alloter(std::shared_ptr<quicx::Alloter>(new quicx::PoolAlloter()));
+    fdan::AlloterWrap alloter(std::shared_ptr<fdan::Alloter>(new fdan::PoolAlloter()));
     auto data = alloter.PoolMalloc<char>(100);
     alloter.PoolFree<char>(data, 100);
     ASSERT_EQ(nullptr, data);
@@ -43,7 +43,7 @@ TEST(alloter_utest, warp3) {
 
 
 TEST(alloter_utest, warp4) {
-    quicx::AlloterWrap alloter(std::shared_ptr<quicx::Alloter>(new quicx::PoolAlloter()));
+    fdan::AlloterWrap alloter(std::shared_ptr<fdan::Alloter>(new fdan::PoolAlloter()));
     {
         auto data = alloter.PoolMallocSharePtr<char>(100);
     }

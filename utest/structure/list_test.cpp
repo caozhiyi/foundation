@@ -1,12 +1,12 @@
 #include <iostream>
 #include <gtest/gtest.h>
-#include "common/structure/list.h"
-#include "common/structure/list_solt.h"
+#include "foundation/structure/list.h"
+#include "foundation/structure/list_solt.h"
 
 static uint32_t __test_shared_count = 0;
 
 class TestListItem:
-    public quicx::ListSolt<TestListItem> {
+    public fdan::ListSolt<TestListItem> {
 public:
     TestListItem(){
         __test_shared_count++;
@@ -18,7 +18,7 @@ public:
 };
 
 TEST(list_utest, add1) {
-    quicx::List<TestListItem> list;
+    fdan::List<TestListItem> list;
     {
         auto item1 = std::make_shared<TestListItem>();
         list.PushFront(item1);
@@ -37,7 +37,7 @@ TEST(list_utest, add1) {
 }
 
 TEST(list_utest, add2) {
-    quicx::List<TestListItem> list;
+    fdan::List<TestListItem> list;
     {
         auto item1 = std::make_shared<TestListItem>();
         list.PushFront(item1);
@@ -53,7 +53,7 @@ TEST(list_utest, add2) {
 }
 
 TEST(list_utest, add3) {
-    quicx::List<TestListItem> list;
+    fdan::List<TestListItem> list;
     {
         auto item1 = std::make_shared<TestListItem>();
         list.PushFront(item1);

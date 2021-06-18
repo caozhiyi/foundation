@@ -1,9 +1,9 @@
 #ifndef UTEST_COMMON_TIMER_COMMON
 #define UTEST_COMMON_TIMER_COMMON
 
-#include "common/timer/timer_solt.h"
+#include "foundation/timer/timer_solt.h"
 
-class TimerSoltIns: public quicx::TimerSolt {
+class TimerSoltIns: public fdan::TimerSolt {
 public:
     void OnTimer() {}
 };
