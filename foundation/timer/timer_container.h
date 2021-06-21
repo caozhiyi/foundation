@@ -40,6 +40,8 @@ public:
     // timer wheel run time 
     // return carry
     uint32_t TimerRun(uint32_t step);
+
+    bool Empty();
     
 private:
     // get current timer wheel timeout time

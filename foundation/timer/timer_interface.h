@@ -46,6 +46,8 @@ public:
     // timer wheel run time 
     // return carry
     virtual uint32_t TimerRun(uint32_t time) = 0;
+
+    virtual bool Empty() = 0;
 };
 
 }

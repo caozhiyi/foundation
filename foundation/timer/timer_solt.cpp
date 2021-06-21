@@ -31,14 +31,14 @@ void TimerSolt::SetInterval(TIME_UNIT tu, uint32_t interval, uint16_t current_ti
         _second_interval = (uint16_t)(interval % 60);
         _second_index = _second_interval + current_time;
         if (_second_index >= 60) {
-            _ms_index -= 60;
+            _second_index -= 60;
         }
         break;
     case TU_MINUTE:
-        _second_interval = (uint16_t)(interval % 60);
-        _second_index = _second_interval + current_time;
-        if (_second_index >= 60) {
-            _ms_index -= 60;
+        _minute_interval = (uint16_t)(interval % 60);
+        _minute_index = _minute_interval + current_time;
+        if (_minute_index >= 60) {
+            _minute_index -= 60;
         }
         break;
     default:
