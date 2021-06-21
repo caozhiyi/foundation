@@ -11,8 +11,6 @@
 
 namespace fdan {
 
-std::unique_ptr<Timer> MakeTimer50Ms();
-
 std::unique_ptr<Timer> MakeTimer1Sec();
 
 std::unique_ptr<Timer> MakeTimer1Min();

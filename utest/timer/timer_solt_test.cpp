@@ -3,6 +3,7 @@
 #include "common.h"
 #include "foundation/timer/timer_interface.h"
 
+/*
 TEST(timersolt_utest, index1) {
     TimerSoltIns t;
     t.SetIndex(25 * fdan::MILLISECOND);
@@ -99,3 +100,4 @@ TEST(timersolt_utest, clear) {
     EXPECT_FALSE(t.IsAlways(fdan::TC_1MIN));
     EXPECT_FALSE(t.IsInTimer());
 }
+*/

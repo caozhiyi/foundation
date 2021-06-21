@@ -3,34 +3,28 @@
 
 // Author: caozhiyi (caozhiyi5@gmail.com)
 
-#include <assert.h>
-#include <algorithm> // for min
-
+#include "timer_solt.h"
 #include "timer_container.h"
 
 namespace fdan {
 
-TimerContainer::TimerContainer(std::unique_ptr<Timer> t, TIMER_CAPACITY accuracy, TIMER_CAPACITY capacity) :
+TimerContainer::TimerContainer(std::unique_ptr<Timer> t, TIME_UNIT unit, TIME_UNIT size):
+    _time_unit(unit),
+    _size(size / unit),
+    _timer_max(size),
     _sub_timer(std::move(t)),
-    _cur_index(0),
-    _accuracy(accuracy),
-    _capacity(capacity) {
+    _cur_time(0) {
 
-    _max_size = capacity/accuracy;
-    _timer_wheel.resize(_max_size);
-    _bitmap.Init(_max_size);
+    _bitmap.Init(_size);
 }
+
 TimerContainer::~TimerContainer() {
 
 }
 
 bool TimerContainer::AddTimer(std::weak_ptr<TimerSolt> t, uint32_t time, bool always) {
-    if (time >= (uint32_t)_capacity) {
+    if (time >= _timer_max) {
         return false;
-    }
-
-    if (time < (uint32_t)_accuracy) {
-        return _sub_timer->AddTimer(t, time, always);
     }
 
     auto ptr = t.lock();
@@ -38,27 +32,23 @@ bool TimerContainer::AddTimer(std::weak_ptr<TimerSolt> t, uint32_t time, bool al
         return false;
     }
 
-    // only can set once
-    if (ptr->IsInTimer()) {
-        return true;
-    }
-    ptr->SetTimer();
-
-    // set always flag
-    if (always) {
-        ptr->SetAlways(_accuracy);
+    // set current timer unit interval
+    ptr->SetInterval(_time_unit, time / _time_unit, _cur_time);
+    if (!ptr->IsInTimer()) {
+        ptr->SetInTimer();
+        if (always) {
+            ptr->SetAlways();
+        }
     }
 
-    ptr->SetInterval(time);
+    // get current timer index
+    uint16_t index = ptr->GetBitmapIndex(_time_unit);
 
-    // relative to current time
-    time += _cur_index * _accuracy;
-    if (time > (uint32_t)_capacity) {
-        time %= _capacity;
+    // should add to sub timer
+    if (index == _cur_time && _sub_timer) {
+        _sub_timer->AddTimer(t, time % _time_unit, always);
     }
 
-    // insert into timer
-    uint32_t index = ptr->SetIndex(time);
     _timer_wheel[index].push_back(t);
     return _bitmap.Insert(index);
 }
@@ -68,11 +58,12 @@ bool TimerContainer::RmTimer(std::weak_ptr<TimerSolt> t) {
     if (!ptr) {
         return false;
     }
-
-    bool ret = _bitmap.Remove(ptr->GetIndex(_accuracy)) && _sub_timer->RmTimer(t);
-    // clear timer solt flag
-    ptr->RmTimer();
-    return ret;
+    ptr->RmInTimer();
+    _bitmap.Remove(ptr->GetBitmapIndex(_time_unit));
+    if (_sub_timer) {
+        _sub_timer->RmTimer(t);
+    }
+    return true;
 }
 
 int32_t TimerContainer::MinTime() {
@@ -80,89 +71,85 @@ int32_t TimerContainer::MinTime() {
         return NO_TIMER;
     }
 
-    int32_t sub_time = _sub_timer->MinTime();
-    int32_t local_time = LocalMinTime();
-
-    // return less time
-    if (sub_time > 0 && local_time > 0) {
-        return std::min(sub_time, local_time);
-
-    } else if (sub_time > 0) {
-        return sub_time;
-
-    } else {
-        return local_time;
+    if (_sub_timer) {
+        int32_t sub_time = _sub_timer->MinTime();
+        if (sub_time > 0) {
+            return sub_time;
+        }
     }
+    
+    int32_t local_time = LocalMinTime();
+    return local_time;
 }
 
 int32_t TimerContainer::CurrentTimer() {
-    return _cur_index * _accuracy + _sub_timer->CurrentTimer();
-}
-
-uint32_t TimerContainer::TimerRun(uint32_t time) {
-    time = time % _capacity;
-    _cur_index += time / _accuracy;
-
-    uint32_t carry = _sub_timer->TimerRun(time % _accuracy);
-    _cur_index += carry;
-
-    uint32_t ret = 0;
-    if (_cur_index >= _max_size) {
-        _cur_index %= _max_size;
-        ret++;
-    }
-
-    auto bucket = _timer_wheel[_cur_index];
-    if (bucket.size() > 0) {
-        for (auto iter = bucket.begin(); iter != bucket.end();) {
-            auto ptr = (iter)->lock();
-            if (ptr && ptr->IsInTimer()) {
-                ptr->OnTimer();
-            }
-            // remove from current bucket
-            iter = bucket.erase(iter);
-            _bitmap.Remove(ptr->GetIndex(_accuracy));
-            if (!ptr->IsAlways(_accuracy) || !ptr->IsInTimer()) {
-                ptr->RmTimer();
-                continue;
-
-            } else {
-                // add to timer again
-                uint16_t next_index = (ptr->GetInterval() / _accuracy) + _cur_index;
-                if (next_index >= _max_size) {
-                    next_index = next_index % _max_size;
-                }
-                AddTimerByIndex(ptr, uint8_t(next_index));
-            }
-        }
+    uint32_t ret = _cur_time * _time_unit;
+    if (_sub_timer) {
+        ret += _sub_timer->CurrentTimer();
     }
     return ret;
 }
 
-void TimerContainer::AddTimerByIndex(std::weak_ptr<TimerSolt> t, uint8_t index) {
-    auto ptr = t.lock();
-    if (!ptr) {
-        return;
+uint32_t TimerContainer::TimerRun(uint32_t time) {
+    _cur_time += time / _time_unit;
+    time = time % _time_unit;
+
+    if (time > 0) {
+        uint32_t sub_run_step = _sub_timer->TimerRun(time);
+        _cur_time += sub_run_step;
     }
 
-    ptr->SetIndex(index, _accuracy);
-    _timer_wheel[index].push_back(t);
-    _bitmap.Insert(index);
+    uint32_t run_setp = 0;
+    if (_cur_time >= _size) {
+        _cur_time -= _size;
+        run_setp++;
+    }
+
+    auto bucket_iter = _timer_wheel.find(_cur_time);
+    if (bucket_iter == _timer_wheel.end()) {
+        return run_setp;
+    }
+    auto& bucket = bucket_iter->second;
+    std::vector<std::shared_ptr<TimerSolt>> run_timer_solts;
+
+    for (auto iter = bucket.begin(); iter != bucket.end(); iter++) {
+        auto ptr = (iter)->lock();
+        if (ptr && ptr->IsInTimer()) {
+            run_timer_solts.push_back(ptr);
+        }
+        // remove from current bucket
+        iter = bucket.erase(iter);
+        _bitmap.Remove(ptr->GetBitmapIndex(_time_unit));
+    }
+
+    _timer_wheel.erase(bucket_iter);
+
+    for (auto iter = run_timer_solts.begin(); iter != run_timer_solts.end(); iter++) {
+        // timer call back
+        (*iter)->OnTimer();
+
+        if ((*iter)->ShouldAddTimer(_time_unit)) {
+            // add to timer again
+            (*iter)->SetInterval(_time_unit, (*iter)->GetInterval(_time_unit), _cur_time);
+            uint16_t bit_index = (*iter)->GetBitmapIndex(_time_unit);
+            _timer_wheel[bit_index].push_back((*iter));
+            _bitmap.Insert(bit_index);
+        }
+    }
+    return run_setp;
 }
 
 int32_t TimerContainer::LocalMinTime() {
-    int32_t sub_runned_time = _sub_timer->CurrentTimer();
-    int32_t next_setp = _bitmap.GetMinAfter(_cur_index);
-    if (next_setp >= 0) {
-        return (next_setp - _cur_index) * _accuracy - sub_runned_time;
+    int32_t next_time = _bitmap.GetMinAfter(_cur_time);
+    if (next_time >= 0) {
+        return (next_time - _cur_time) * _time_unit;
     }
 
-    if (_cur_index > 0) {
-        next_setp = _bitmap.GetMinAfter(0);
-    }
-    
-    if (next_setp >= 0) {
-        return (next_setp + _max_size - _cur_index) * _accuracy - sub_runned_time;
+    if (_cur_time > 0) {
+        next_time = _bitmap.GetMinAfter(0);
+        if (next_time >= 0) {
+            return (next_time + _size - _cur_time) * _time_unit;
+        }
     }
 
     return NO_TIMER;

@@ -7,131 +7,112 @@
 
 namespace fdan {
 
-std::unordered_map<uint32_t, uint8_t> TimerSolt::_index_map;
+TimerSolt::TimerSolt(): 
+    _ms_interval(0),
+    _second_interval(0),
+    _minute_interval(0),
+    _ms_index(0),
+    _second_index(0),
+    _minute_index(0) {
 
-TimerSolt::TimerSolt() {  
-    _index._index = 0;
-    _index_map[TC_1MS]  =  0;
-    _index_map[TC_50MS] =  1;
-    _index_map[TC_1SEC] =  2;
-    _index_map[TC_1MIN] =  3;
-}
+} 
 
-TimerSolt::~TimerSolt() {
-
-}
-
-uint8_t TimerSolt::GetIndex(TIMER_CAPACITY tc) {
-    auto index = _index_map[tc];
-    return _index._index_arr[index] & ~TSF_INDEX_MASK;
-}
-
-uint8_t TimerSolt::SetIndex(uint32_t index) {
-    if (index > TC_1HOUR) {
-        return 0;
-    }
-
-    uint8_t ret = 0;
-    if (index >= TC_1MIN) {
-        uint8_t sub_index = index / TC_1MIN;
-        index = index % TC_1MIN;
-        SetIndex(3, sub_index);
-        ret = sub_index;
-    } 
-    
-    if (index >= TC_1SEC) {
-        uint8_t sub_index = index / TC_1SEC;
-        index = index % TC_1SEC;
-        SetIndex(2, sub_index);
-        if (ret == 0) {
-            ret = sub_index;
-        }
-    }
-
-    if (index >= TC_50MS) {
-        uint8_t sub_index = index / TC_50MS;
-        index = index % TC_50MS;
-        SetIndex(1, sub_index);
-        if (ret == 0) {
-            ret = sub_index;
-        }
-    }
-    
-    if (index > 0) {
-        uint8_t sub_index = index;
-        SetIndex(0, sub_index);
-        if (ret == 0) {
-            ret = sub_index;
-        }
-    }
-    return ret;
-}
-
-void TimerSolt::SetIndex(uint8_t index, TIMER_CAPACITY tc) {
-    switch (tc)
+void TimerSolt::SetInterval(TIME_UNIT tu, uint32_t interval, uint16_t current_time) {
+    switch (tu)
     {
-    case TC_1MS:
-        SetIndex(0, index);
+    case TU_MILLISECOND:
+        _ms_interval = (uint16_t)(interval % TU_SECOND);
+        _ms_index = _ms_interval + current_time;
+        if (_ms_index >= TU_SECOND) {
+            _ms_index -= TU_SECOND;
+        }
         break;
-    case TC_50MS:
-        SetIndex(1, index);
+    case TU_SECOND:
+        _second_interval = (uint16_t)(interval % 60);
+        _second_index = _second_interval + current_time;
+        if (_second_index >= 60) {
+            _ms_index -= 60;
+        }
         break;
-    case TC_1SEC:
-        SetIndex(2, index);
-        break;
-    case TC_1MIN:
-        SetIndex(3, index);
+    case TU_MINUTE:
+        _second_interval = (uint16_t)(interval % 60);
+        _second_index = _second_interval + current_time;
+        if (_second_index >= 60) {
+            _ms_index -= 60;
+        }
         break;
     default:
-        // shouldn't here
         break;
     }
 }
 
-void TimerSolt::SetAlways(TIMER_CAPACITY tc) {
-    auto index = _index_map[tc];
-    _index._index_arr[index] |= TSF_ALWAYS;
+uint16_t TimerSolt::GetInterval(TIME_UNIT tu) {
+    switch (tu)
+    {
+    case TU_MILLISECOND:
+        return _ms_interval & ~(TSF_IN_TIMER | TSF_ALWAYS);
+    case TU_SECOND:
+        return _second_interval;
+    case TU_MINUTE:
+        return _minute_interval;
+    default:
+        break;
+    }
+    return 0;
 }
 
-void TimerSolt::CancelAlways(TIMER_CAPACITY tc) {
-    auto index = _index_map[tc];
-    _index._index_arr[index] &= ~TSF_ALWAYS;
+uint16_t TimerSolt::GetBitmapIndex(TIME_UNIT tu) {
+    switch (tu)
+    {
+    case TU_MILLISECOND:
+        return _ms_index;
+    case TU_SECOND:
+        return _second_index;
+    case TU_MINUTE:
+        return _minute_index;
+    default:
+        break;
+    }
+    return 0;
 }
 
-bool TimerSolt::IsAlways(TIMER_CAPACITY tc) {
-    auto index = _index_map[tc];
-    return _index._index_arr[index] & TSF_ALWAYS;
-}
-
-void TimerSolt::Clear() {
-    _interval = 0; 
-    _index._index = 0; 
-}
-
-void TimerSolt::SetIndex(uint32_t pos, uint8_t index) {
-    // clear current index
-    _index._index_arr[pos] &= TSF_INDEX_MASK;
-    _index._index_arr[pos] |= index; 
-}
-
-void TimerSolt::SetTimer() {
-    _index._index_arr[3] |= TSF_INTIMER;
-}
-
-void TimerSolt::RmTimer() {
-    Clear();
+void TimerSolt::SetInTimer() {
+    _ms_interval |= TSF_IN_TIMER;
 }
 
 bool TimerSolt::IsInTimer() {
-    return _index._index_arr[3] & TSF_INTIMER;
+    return _ms_interval & TSF_IN_TIMER;
 }
 
-uint32_t TimerSolt::GetInterval() {
-    return _interval;
+void TimerSolt::RmInTimer() {
+    _ms_interval &= ~TSF_IN_TIMER;
 }
 
-void TimerSolt::SetInterval(uint32_t time) {
-    _interval = time;
+void TimerSolt::SetAlways() {
+    _ms_interval |= TSF_ALWAYS;
+}
+
+bool TimerSolt::IsAlways() {
+    return _ms_interval & TSF_ALWAYS;
+}
+
+void TimerSolt::RmAlways() {
+    _ms_interval &= ~TSF_ALWAYS;
+}
+
+bool TimerSolt::ShouldAddTimer(TIME_UNIT tu) {
+    switch (tu)
+    {
+    case TU_MILLISECOND:
+        return _second_index == 0 && _minute_index == 0;
+    case TU_SECOND:
+        return _minute_index == 0;
+    case TU_MINUTE:
+        return true;
+    default:
+        break;
+    }
+    return false;
 }
 
 }

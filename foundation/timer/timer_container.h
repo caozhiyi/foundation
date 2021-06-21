@@ -6,7 +6,12 @@
 #ifndef COMMON_TIMER_TIMER_CONTAINER
 #define COMMON_TIMER_TIMER_CONTAINER
 
-#include "timer_1ms.h"
+#include <list>
+#include <memory>
+#include <unordered_map>
+
+#include "../util/bitmap.h"
+#include "timer_interface.h"
 
 namespace fdan {
 
@@ -19,7 +24,7 @@ class TimerContainer:
     public Timer {
 
 public:
-    TimerContainer(std::unique_ptr<Timer> t, TIMER_CAPACITY accuracy, TIMER_CAPACITY capacity);
+    TimerContainer(std::unique_ptr<Timer> t, TIME_UNIT unit, TIME_UNIT size);
     ~TimerContainer();
 
     bool AddTimer(std::weak_ptr<TimerSolt> t, uint32_t time, bool always = false);
@@ -37,20 +42,18 @@ public:
     uint32_t TimerRun(uint32_t step);
     
 private:
-    // add timer by index. only set current time wheel
-    void AddTimerByIndex(std::weak_ptr<TimerSolt> t, uint8_t index);
     // get current timer wheel timeout time
     int32_t LocalMinTime();
     
 private:
-    std::vector<std::list<std::weak_ptr<TimerSolt>>> _timer_wheel;
-    std::unique_ptr<Timer> _sub_timer;
-    uint32_t _cur_index;
-    Bitmap _bitmap;
+    TIME_UNIT _time_unit;
+    uint32_t  _size;
+    uint32_t  _timer_max;
 
-    TIMER_CAPACITY _accuracy;
-    TIMER_CAPACITY _capacity;
-    uint32_t _max_size;
+    uint32_t _cur_time;
+    Bitmap   _bitmap;
+    std::unique_ptr<Timer> _sub_timer;
+    std::unordered_map<uint32_t, std::list<std::weak_ptr<TimerSolt>>> _timer_wheel;
 };
 
 }

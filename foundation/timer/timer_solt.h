@@ -7,7 +7,6 @@
 #define COMMON_TIMER_TIMER_SOLT
 
 #include <cstdint>
-#include <unordered_map>
 #include "timer_interface.h"
 
 namespace fdan {
@@ -17,45 +16,43 @@ namespace fdan {
 // they internal used by timer.
 class TimerSolt {
 public:
+    TimerSolt();
+    ~TimerSolt() {}
 
+private:
     enum TIMER_SOLT_FLAG {
-        TSF_INDEX_MASK = 3 << 6,
-        TSF_ALWAYS     = 1 << 7,
-        TSF_INTIMER    = 1 << 6,
+        TSF_IN_TIMER = 1 << 14,
+        TSF_ALWAYS   = 1 << 15,
     };
 
-    TimerSolt();
-    ~TimerSolt();
     // timer out call back
     virtual void OnTimer() = 0;
 
-    uint8_t GetIndex(TIMER_CAPACITY tc);
-    uint8_t SetIndex(uint32_t index);
-    void SetIndex(uint8_t index, TIMER_CAPACITY tc);
+    void SetInterval(TIME_UNIT tc, uint32_t interval, uint16_t current_time);
+    uint16_t GetInterval(TIME_UNIT tc);
+    uint16_t GetBitmapIndex(TIME_UNIT tc);
 
-    void SetAlways(TIMER_CAPACITY tc);
-    void CancelAlways(TIMER_CAPACITY tc);
-    bool IsAlways(TIMER_CAPACITY tc);
-
-    void Clear();
-
-    void SetTimer();
-    void RmTimer();
+    void SetInTimer();
     bool IsInTimer();
+    void RmInTimer();
 
-    uint32_t GetInterval();
-    void SetInterval(uint32_t time);
+    void SetAlways();
+    bool IsAlways();
+    void RmAlways();
+
+    bool ShouldAddTimer(TIME_UNIT tc);
 
 private:
-    void SetIndex(uint32_t pos, uint8_t index);
+    friend class TimerContainer;
+    friend class Timer1ms;
 
-private:
-    static std::unordered_map<uint32_t, uint8_t> _index_map;
-    union {
-        uint8_t  _index_arr[4];
-        uint32_t _index;
-    } _index;
-    uint32_t _interval;
+    uint16_t _ms_interval;
+    uint8_t  _second_interval;
+    uint8_t  _minute_interval;
+
+    uint16_t _ms_index;
+    uint8_t  _second_index;
+    uint8_t  _minute_index;
 };
 
 }
