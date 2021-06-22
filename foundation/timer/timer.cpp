@@ -14,13 +14,14 @@ std::unique_ptr<Timer> MakeTimer1Sec() {
 }
 
 std::unique_ptr<Timer> MakeTimer1Min() {
-    auto sub = MakeTimer1Sec();
-    return std::unique_ptr<Timer>(new TimerContainer(std::move(sub), TU_SECOND, TU_MINUTE));
+    auto sec_sub = std::make_shared<TimerContainer>(nullptr, TU_MILLISECOND, TU_SECOND);
+    return std::unique_ptr<Timer>(new TimerContainer(sec_sub, TU_SECOND, TU_MINUTE));
 }
 
 std::unique_ptr<Timer> MakeTimer1Hour() {
-    auto sub = MakeTimer1Min();
-    return std::unique_ptr<Timer>(new TimerContainer(std::move(sub), TU_MINUTE, TU_HOUR));
+    auto sec_sub = std::make_shared<TimerContainer>(nullptr, TU_MILLISECOND, TU_SECOND);
+    auto min_sub = std::make_shared<TimerContainer>(sec_sub, TU_SECOND, TU_MINUTE);
+    return std::unique_ptr<Timer>(new TimerContainer(min_sub, TU_MINUTE, TU_HOUR));
 }
 
 }

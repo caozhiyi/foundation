@@ -29,7 +29,7 @@ private:
     virtual void OnTimer() = 0;
 
     void SetInterval(TIME_UNIT tc, uint32_t interval, uint16_t current_time);
-    uint16_t GetInterval(TIME_UNIT tc);
+    uint32_t GetInterval();
     uint16_t GetBitmapIndex(TIME_UNIT tc);
 
     void SetInTimer();
@@ -40,15 +40,13 @@ private:
     bool IsAlways();
     void RmAlways();
 
-    bool ShouldAddTimer(TIME_UNIT tc);
+    bool ShouldAddSubTimer(TIME_UNIT tc);
 
 private:
     friend class TimerContainer;
     friend class Timer1ms;
 
-    uint16_t _ms_interval;
-    uint8_t  _second_interval;
-    uint8_t  _minute_interval;
+    uint32_t _interval;
 
     uint16_t _ms_index;
     uint8_t  _second_index;

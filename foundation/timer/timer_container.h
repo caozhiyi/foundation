@@ -24,7 +24,7 @@ class TimerContainer:
     public Timer {
 
 public:
-    TimerContainer(std::unique_ptr<Timer> t, TIME_UNIT unit, TIME_UNIT size);
+    TimerContainer(std::shared_ptr<TimerContainer> t, TIME_UNIT unit, TIME_UNIT size);
     ~TimerContainer();
 
     bool AddTimer(std::weak_ptr<TimerSolt> t, uint32_t time, bool always = false);
@@ -43,10 +43,10 @@ public:
 
     bool Empty();
     
-private:
+protected:
     // get current timer wheel timeout time
     int32_t LocalMinTime();
-    
+    bool InnerAddTimer(std::shared_ptr<TimerSolt> ptr, uint32_t time);
 private:
     TIME_UNIT _time_unit;
     uint32_t  _size;
@@ -54,7 +54,7 @@ private:
 
     uint32_t _cur_time;
     Bitmap   _bitmap;
-    std::unique_ptr<Timer> _sub_timer;
+    std::shared_ptr<TimerContainer> _sub_timer;
     std::unordered_map<uint32_t, std::list<std::weak_ptr<TimerSolt>>> _timer_wheel;
 };
 

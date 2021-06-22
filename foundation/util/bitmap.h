@@ -36,6 +36,9 @@ public:
     bool Empty();
 
 private:
+    // which index of vector used
+    uint32_t _vec_bitmap;
+    // all bit
     std::vector<int64_t> _bitmap;
 };
 

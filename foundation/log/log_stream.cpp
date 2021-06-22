@@ -93,12 +93,6 @@ LogStream& LogStream::operator<<(uint64_t v) {
     return *this;
 }
 
-LogStream& LogStream::operator<<(long long v) {
-    CHECK_CONTINUE()
-    _log->_len += snprintf(_log->_log + _log->_len, __log_block_size - _log->_len, "%lld", v);
-    return *this;
-}
-
 LogStream& LogStream::operator<<(float v) {
     CHECK_CONTINUE()
 
