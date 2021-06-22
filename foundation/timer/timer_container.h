@@ -24,7 +24,7 @@ class TimerContainer:
     public Timer {
 
 public:
-    TimerContainer(std::shared_ptr<TimerContainer> t, TIME_UNIT unit, TIME_UNIT size);
+    TimerContainer(std::shared_ptr<TimerContainer> sub_timer, TIME_UNIT unit, TIME_UNIT size);
     ~TimerContainer();
 
     bool AddTimer(std::weak_ptr<TimerSolt> t, uint32_t time, bool always = false);
@@ -47,6 +47,7 @@ protected:
     // get current timer wheel timeout time
     int32_t LocalMinTime();
     bool InnerAddTimer(std::shared_ptr<TimerSolt> ptr, uint32_t time);
+    bool SubTimerTryRun(std::shared_ptr<TimerSolt> ptr);
 private:
     TIME_UNIT _time_unit;
     uint32_t  _size;

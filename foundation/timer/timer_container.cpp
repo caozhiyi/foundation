@@ -9,11 +9,11 @@
 
 namespace fdan {
 
-TimerContainer::TimerContainer(std::shared_ptr<TimerContainer> t, TIME_UNIT unit, TIME_UNIT size):
+TimerContainer::TimerContainer(std::shared_ptr<TimerContainer> sub_timer, TIME_UNIT unit, TIME_UNIT size):
     _time_unit(unit),
     _size(size / unit),
     _timer_max(size),
-    _sub_timer(t),
+    _sub_timer(sub_timer),
     _cur_time(0) {
 
     _bitmap.Init(_size);
@@ -132,7 +132,9 @@ uint32_t TimerContainer::TimerRun(uint32_t time) {
     for (auto iter = run_timer_solts.begin(); iter != run_timer_solts.end(); iter++) {
         auto ptr = *iter;
         if (ptr->ShouldAddSubTimer(_time_unit)) {
-            _sub_timer->InnerAddTimer(ptr, ptr->GetInterval());
+            if (!SubTimerTryRun(ptr)) {
+                _sub_timer->InnerAddTimer(ptr, ptr->GetInterval());
+            }
 
         } else {
             ptr->OnTimer();
@@ -169,17 +171,32 @@ int32_t TimerContainer::LocalMinTime() {
 }
 
 bool TimerContainer::InnerAddTimer(std::shared_ptr<TimerSolt> ptr, uint32_t time) {
+   
     ptr->SetInterval(_time_unit, time, _cur_time);
     // get current timer index
     uint16_t index = ptr->GetBitmapIndex(_time_unit);
 
     // should add to sub timer
     if (index == _cur_time && _sub_timer) {
-        return _sub_timer->AddTimer(ptr, time);
+        return _sub_timer->InnerAddTimer(ptr, time);
     }
 
     _timer_wheel[index].push_back(ptr);
     return _bitmap.Insert(index);
+}
+
+bool TimerContainer::SubTimerTryRun(std::shared_ptr<TimerSolt> ptr) {
+    // need timeout now
+    if (_sub_timer) {
+        if (_sub_timer->SubTimerTryRun(ptr)) {
+            return true;
+        }
+    }
+    if (!Empty() && ptr->GetBitmapIndex(_time_unit) == _cur_time) {
+        ptr->OnTimer();
+        return true;
+    }
+    return false;
 }
 
 }

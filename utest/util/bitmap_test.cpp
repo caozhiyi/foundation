@@ -12,6 +12,7 @@ TEST(bitmap_utest, insert) {
 
     EXPECT_TRUE(bm.Init(100));
 
+    EXPECT_TRUE(bm.Insert(0));
     EXPECT_TRUE(bm.Insert(10));
     EXPECT_TRUE(bm.Insert(65));
     EXPECT_FALSE(bm.Insert(200));
@@ -41,11 +42,10 @@ TEST(bitmap_utest, minafter) {
     EXPECT_EQ(20, bm.GetMinAfter(8));
     EXPECT_TRUE(bm.Remove(20));
     EXPECT_EQ(60, bm.GetMinAfter(8));
-    EXPECT_EQ(400, bm.GetMinAfter(60));
+    EXPECT_EQ(400, bm.GetMinAfter(61));
     EXPECT_TRUE(bm.Remove(400));
-    EXPECT_EQ(800, bm.GetMinAfter(60));
+    EXPECT_EQ(800, bm.GetMinAfter(61));
 }
-
 
 TEST(bitmap_utest, empty) {
     fdan::Bitmap bm;
@@ -60,9 +60,9 @@ TEST(bitmap_utest, empty) {
     EXPECT_TRUE(bm.Remove(20));
     EXPECT_EQ(60, bm.GetMinAfter(8));
 
-    EXPECT_EQ(400, bm.GetMinAfter(60));
+    EXPECT_EQ(400, bm.GetMinAfter(61));
     EXPECT_TRUE(bm.Remove(400));
-    EXPECT_EQ(800, bm.GetMinAfter(60));
+    EXPECT_EQ(800, bm.GetMinAfter(61));
 
     EXPECT_TRUE(bm.Remove(800));
     EXPECT_TRUE(bm.Remove(60));

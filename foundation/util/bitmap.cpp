@@ -40,11 +40,11 @@ bool Bitmap::Insert(uint32_t index) {
     if (index > _bitmap.size() * __step_size) {
         return false;
     }
-    
+
     // get index in vector
     uint32_t bitmap_index = index / __step_size;
     // get index in uint64_t
-    uint32_t bit_index = index % __step_size - 1;
+    uint32_t bit_index = index % __step_size;
 
     _bitmap[bitmap_index] |= __setp_base << bit_index;
     _vec_bitmap |= __setp_base << bitmap_index;
@@ -60,7 +60,7 @@ bool Bitmap::Remove(uint32_t index) {
     // get index in vector
     uint32_t bitmap_index = index / __step_size;
     // get index in uint64_t
-    uint32_t bit_index = index % __step_size - 1;
+    uint32_t bit_index = index % __step_size;
 
     _bitmap[bitmap_index] &= ~(__setp_base << bit_index);
     if (_bitmap[bitmap_index] == 0) {
@@ -85,7 +85,6 @@ int32_t Bitmap::GetMinAfter(uint32_t index) {
         int64_t cur_bitmap = _bitmap[bitmap_index];
         int32_t cur_step = index - ret;
         cur_bitmap = cur_bitmap >> cur_step;
-        cur_bitmap &= ~1;
 
         // don't have next 1
         if (cur_bitmap == 0) {
@@ -94,9 +93,12 @@ int32_t Bitmap::GetMinAfter(uint32_t index) {
         // find next 1
         } else {
             ret += cur_step;
-            ret += (uint32_t)std::log2f(float(cur_bitmap & (-cur_bitmap))) + 1;
+            ret += (uint32_t)std::log2f(float(cur_bitmap & (-cur_bitmap)));
             return ret;
         }
+
+    } else {
+        ret += __step_size;
     }
 
     // find next used vector index 
@@ -106,11 +108,14 @@ int32_t Bitmap::GetMinAfter(uint32_t index) {
     }
 
     uint32_t next_vec_index = (uint32_t)std::log2f(float(temp_vec_bitmap & (-temp_vec_bitmap) + 1));
+    if (next_vec_index == bitmap_index) {
+        return -1;
+    }
     uint32_t target_vec_index = next_vec_index + bitmap_index;
 
     int64_t cur_bitmap = _bitmap[target_vec_index];
     ret += (next_vec_index - 1) * __step_size;
-    ret += (uint32_t)std::log2f(float(cur_bitmap & (-cur_bitmap))) + 1;
+    ret += (uint32_t)std::log2f(float(cur_bitmap & (-cur_bitmap) + 1));
 
     return ret;
 }

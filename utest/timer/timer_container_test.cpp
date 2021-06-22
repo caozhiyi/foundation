@@ -153,3 +153,25 @@ TEST(timercontainer_utest, timerrun3) {
     timer->TimerRun(30930);
     EXPECT_EQ(-1, timer->MinTime());
 }
+
+
+TEST(timercontainer_utest, uniontime) {
+    auto solt1 = std::make_shared<TimerSoltIns>();
+    auto timer = fdan::MakeTimer1Hour();
+
+    EXPECT_TRUE(timer->AddTimer(solt1, 500 * fdan::TU_MILLISECOND + 2 * fdan::TU_SECOND), true);
+
+    EXPECT_EQ(2000, timer->MinTime());
+
+    timer->TimerRun(2000);
+    EXPECT_EQ(500, timer->MinTime());
+
+    timer->TimerRun(500);
+    EXPECT_EQ(1500, timer->MinTime());
+
+    timer->TimerRun(1500);
+    EXPECT_EQ(2500, timer->MinTime());
+
+    timer->TimerRun(30930);
+    EXPECT_EQ(-1, timer->MinTime());
+}
