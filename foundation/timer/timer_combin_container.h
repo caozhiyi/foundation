@@ -10,53 +10,39 @@
 #include <memory>
 #include <unordered_map>
 
-#include "../util/bitmap.h"
-#include "timer_interface.h"
+#include "timer_integer_container.h"
 
 namespace fdan {
+
+// combination timer
+// can set any time. as 20ms, 452ms, 50sec, 5minute, 1500 ms(1sec + 500ms) ...
 
 // timer wheel container, include a sub timer.
 // if set timeout time is little than accuracy, will be added to sub timer wheel.
 // It inherits from the timer interface, 
 // so can set another timer wheel container to sub timer to support more timer set.
 // More timer define see timer.h file.
-class TimerContainer: 
-    public Timer {
+class TimerCombinContainer: 
+    public TimerIntegerContainer {
 
 public:
-    TimerContainer(std::shared_ptr<TimerContainer> sub_timer, TIME_UNIT unit, TIME_UNIT size);
-    ~TimerContainer();
-
-    bool AddTimer(std::weak_ptr<TimerSolt> t, uint32_t time, bool always = false);
-    bool RmTimer(std::weak_ptr<TimerSolt> t);
-
-    // get min next time out time
-    // return
-    // >= 0 : the next time
-    //  < 0 : has no timer
-    int32_t MinTime();
-    // return the timer wheel current time
-    int32_t CurrentTimer();
+    TimerCombinContainer(std::shared_ptr<TimerCombinContainer> sub_timer, TIME_UNIT unit, TIME_UNIT size);
+    virtual ~TimerCombinContainer();
     // timer wheel run time 
     // return carry
-    uint32_t TimerRun(uint32_t step);
+    virtual uint32_t TimerRun(uint32_t step);
 
-    bool Empty();
+    void SetRootTimer(std::shared_ptr<TimerCombinContainer> root_timer) { _root_timer = root_timer; }
     
 protected:
     // get current timer wheel timeout time
     int32_t LocalMinTime();
     bool InnerAddTimer(std::shared_ptr<TimerSolt> ptr, uint32_t time);
     bool SubTimerTryRun(std::shared_ptr<TimerSolt> ptr);
-private:
-    TIME_UNIT _time_unit;
-    uint32_t  _size;
-    uint32_t  _timer_max;
+    uint32_t GetSubFutureTimer(uint32_t next_index);
 
-    uint32_t _cur_time;
-    Bitmap   _bitmap;
-    std::shared_ptr<TimerContainer> _sub_timer;
-    std::unordered_map<uint32_t, std::list<std::weak_ptr<TimerSolt>>> _timer_wheel;
+private:
+    std::shared_ptr<TimerCombinContainer> _root_timer;
 };
 
 }

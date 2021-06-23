@@ -43,8 +43,8 @@ private:
     bool ShouldAddSubTimer(TIME_UNIT tc);
 
 private:
-    friend class TimerContainer;
-    friend class Timer1ms;
+    friend class TimerCombinContainer;
+    friend class TimerIntegerContainer;
 
     uint32_t _interval;
 

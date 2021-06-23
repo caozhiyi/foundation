@@ -3,19 +3,19 @@
 #include "common.h"
 #include "foundation/timer/timer.h"
 
-TEST(timercontainer_utest, addtimer1) {
+TEST(combin_timercontainer_utest, addtimer1) {
     auto solt = std::make_shared<TimerSoltIns>();
-    auto timer = fdan::MakeTimer1Hour();
+    auto timer = fdan::MakeCombinTimer1Hour();
 
     EXPECT_TRUE(timer->AddTimer(solt, 30 * fdan::TU_MILLISECOND));
 }
 
-TEST(timercontainer_utest, addtimer2) {
+TEST(combin_timercontainer_utest, addtimer2) {
     auto solt1 = std::make_shared<TimerSoltIns>();
     auto solt2 = std::make_shared<TimerSoltIns>();
     auto solt3 = std::make_shared<TimerSoltIns>();
     auto solt4 = std::make_shared<TimerSoltIns>();
-    auto timer = fdan::MakeTimer1Hour();
+    auto timer = fdan::MakeCombinTimer1Hour();
 
     EXPECT_TRUE(timer->AddTimer(solt1, 10 * fdan::TU_MILLISECOND, true));
     EXPECT_TRUE(timer->AddTimer(solt2, 30 * fdan::TU_SECOND));
@@ -23,12 +23,12 @@ TEST(timercontainer_utest, addtimer2) {
     EXPECT_TRUE(timer->AddTimer(solt4, 50 * fdan::TU_MINUTE));
 }
 
-TEST(timercontainer_utest, rmtimer) {
+TEST(combin_timercontainer_utest, rmtimer) {
     auto solt1 = std::make_shared<TimerSoltIns>();
     auto solt2 = std::make_shared<TimerSoltIns>();
     auto solt3 = std::make_shared<TimerSoltIns>();
     auto solt4 = std::make_shared<TimerSoltIns>();
-    auto timer = fdan::MakeTimer1Hour();
+    auto timer = fdan::MakeCombinTimer1Hour();
 
     EXPECT_TRUE(timer->AddTimer(solt1, 10 * fdan::TU_MILLISECOND, true));
     EXPECT_TRUE(timer->AddTimer(solt2, 30 * fdan::TU_SECOND));
@@ -41,12 +41,12 @@ TEST(timercontainer_utest, rmtimer) {
     EXPECT_TRUE(timer->RmTimer(solt4));
 }
 
-TEST(timercontainer_utest, mintime) {
+TEST(combin_timercontainer_utest, mintime) {
     auto solt1 = std::make_shared<TimerSoltIns>();
     auto solt2 = std::make_shared<TimerSoltIns>();
     auto solt3 = std::make_shared<TimerSoltIns>();
     auto solt4 = std::make_shared<TimerSoltIns>();
-    auto timer = fdan::MakeTimer1Hour();
+    auto timer = fdan::MakeCombinTimer1Hour();
 
     EXPECT_TRUE(timer->AddTimer(solt1, 10 * fdan::TU_MILLISECOND));
     EXPECT_TRUE(timer->AddTimer(solt2, 30 * fdan::TU_SECOND));
@@ -61,12 +61,12 @@ TEST(timercontainer_utest, mintime) {
     EXPECT_EQ(40 * fdan::TU_MINUTE, timer->MinTime());
 }
 
-TEST(timercontainer_utest, timerrun1) {
+TEST(combin_timercontainer_utest, timerrun1) {
     auto solt1 = std::make_shared<TimerSoltIns>();
     auto solt2 = std::make_shared<TimerSoltIns>();
     auto solt3 = std::make_shared<TimerSoltIns>();
     auto solt4 = std::make_shared<TimerSoltIns>();
-    auto timer = fdan::MakeTimer1Hour();
+    auto timer = fdan::MakeCombinTimer1Hour();
 
     EXPECT_TRUE(timer->AddTimer(solt1, 20 * fdan::TU_MILLISECOND));
     EXPECT_TRUE(timer->AddTimer(solt2, 30 * fdan::TU_SECOND));
@@ -92,12 +92,12 @@ TEST(timercontainer_utest, timerrun1) {
     }
 }
 
-TEST(timercontainer_utest, timerrun2) {
+TEST(combin_timercontainer_utest, timerrun2) {
     auto solt1 = std::make_shared<TimerSoltIns>();
     auto solt2 = std::make_shared<TimerSoltIns>();
     auto solt3 = std::make_shared<TimerSoltIns>();
     auto solt4 = std::make_shared<TimerSoltIns>();
-    auto timer = fdan::MakeTimer1Hour();
+    auto timer = fdan::MakeCombinTimer1Hour();
 
     EXPECT_TRUE(timer->AddTimer(solt1, 20 * fdan::TU_MILLISECOND));
     EXPECT_TRUE(timer->AddTimer(solt2, 31 * fdan::TU_SECOND, true));
@@ -126,12 +126,12 @@ TEST(timercontainer_utest, timerrun2) {
     }
 }
 
-TEST(timercontainer_utest, timerrun3) {
+TEST(combin_timercontainer_utest, timerrun3) {
     auto solt1 = std::make_shared<TimerSoltIns>();
     auto solt2 = std::make_shared<TimerSoltIns>();
     auto solt3 = std::make_shared<TimerSoltIns>();
     auto solt4 = std::make_shared<TimerSoltIns>();
-    auto timer = fdan::MakeTimer1Hour();
+    auto timer = fdan::MakeCombinTimer1Hour();
 
     EXPECT_TRUE(timer->AddTimer(solt1, 20 * fdan::TU_MILLISECOND));
     EXPECT_TRUE(timer->AddTimer(solt2, 31 * fdan::TU_SECOND));
@@ -154,24 +154,23 @@ TEST(timercontainer_utest, timerrun3) {
     EXPECT_EQ(-1, timer->MinTime());
 }
 
-
-TEST(timercontainer_utest, uniontime) {
+TEST(combin_timercontainer_utest, timerrun4) {
     auto solt1 = std::make_shared<TimerSoltIns>();
-    auto timer = fdan::MakeTimer1Hour();
+    auto timer = fdan::MakeCombinTimer1Hour();
 
-    EXPECT_TRUE(timer->AddTimer(solt1, 500 * fdan::TU_MILLISECOND + 2 * fdan::TU_SECOND), true);
+    EXPECT_TRUE(timer->AddTimer(solt1, 1500 * fdan::TU_MILLISECOND, true));
 
-    EXPECT_EQ(2000, timer->MinTime());
+    EXPECT_EQ(1000, timer->MinTime());
 
-    timer->TimerRun(2000);
+    timer->TimerRun(1000);
     EXPECT_EQ(500, timer->MinTime());
 
     timer->TimerRun(500);
-    EXPECT_EQ(1500, timer->MinTime());
+    EXPECT_EQ(1000, timer->MinTime());
 
-    timer->TimerRun(1500);
-    EXPECT_EQ(2500, timer->MinTime());
+    timer->TimerRun(500);
+    EXPECT_EQ(500, timer->MinTime());
 
-    timer->TimerRun(30930);
-    EXPECT_EQ(-1, timer->MinTime());
+    timer->TimerRun(500);
+    EXPECT_EQ(500, timer->MinTime());
 }

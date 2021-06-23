@@ -45,7 +45,7 @@ TEST(filelogger_stream_utest, value) {
     fdan::LOG_FATAL_S <<  "uint32 value:" << uint32_t(-1);
     fdan::LOG_FATAL_S <<  "int64 value:" << int64_t(-515811548);
     fdan::LOG_FATAL_S <<  "uint64 value:" << uint64_t(-1);
-    fdan::LOG_FATAL_S <<  "long long value:" << (long long)(54561648451166);
+    // fdan::LOG_FATAL_S <<  "long long value:" << (long long)(54561648451166);
     fdan::LOG_FATAL_S <<  "float value:" << float(1.1111111111111);
     fdan::LOG_FATAL_S <<  "double value:" << double(1.45516167894165);;
     fdan::LOG_FATAL_S <<  "string value:" << std::string("it is a test log");
