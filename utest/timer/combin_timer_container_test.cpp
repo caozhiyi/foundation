@@ -2,7 +2,7 @@
 
 #include "common.h"
 #include "foundation/timer/timer.h"
-
+/*
 TEST(combin_timercontainer_utest, addtimer1) {
     auto solt = std::make_shared<TimerSoltIns>();
     auto timer = fdan::MakeCombinTimer1Hour();
@@ -174,3 +174,4 @@ TEST(combin_timercontainer_utest, timerrun4) {
     timer->TimerRun(500);
     EXPECT_EQ(500, timer->MinTime());
 }
+*/

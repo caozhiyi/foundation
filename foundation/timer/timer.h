@@ -10,7 +10,7 @@
 #include "timer_interface.h"
 
 namespace fdan {
-
+/*
 std::unique_ptr<Timer> MakeIntegerTimer1Sec();
 
 std::unique_ptr<Timer> MakeIntegerTimer1Min();
@@ -22,6 +22,12 @@ std::shared_ptr<Timer> MakeCombinTimer1Sec();
 std::shared_ptr<Timer> MakeCombinTimer1Min();
 
 std::shared_ptr<Timer> MakeCombinTimer1Hour();
+*/
+std::shared_ptr<Timer> MakeTimer1Sec();
+
+std::shared_ptr<Timer> MakeTimer1Min();
+
+std::shared_ptr<Timer> MakeTimer1Hour();
 
 
 }

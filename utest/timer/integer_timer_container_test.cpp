@@ -5,7 +5,7 @@
 
 TEST(integer_timercontainer_utest, addtimer1) {
     auto solt = std::make_shared<TimerSoltIns>();
-    auto timer = fdan::MakeIntegerTimer1Hour();
+    auto timer = fdan::MakeTimer1Hour();
 
     EXPECT_TRUE(timer->AddTimer(solt, 30 * fdan::TU_MILLISECOND));
 }
@@ -15,7 +15,7 @@ TEST(integer_timercontainer_utest, addtimer2) {
     auto solt2 = std::make_shared<TimerSoltIns>();
     auto solt3 = std::make_shared<TimerSoltIns>();
     auto solt4 = std::make_shared<TimerSoltIns>();
-    auto timer = fdan::MakeIntegerTimer1Hour();
+    auto timer = fdan::MakeTimer1Hour();
 
     EXPECT_TRUE(timer->AddTimer(solt1, 10 * fdan::TU_MILLISECOND, true));
     EXPECT_TRUE(timer->AddTimer(solt2, 30 * fdan::TU_SECOND));
@@ -28,7 +28,7 @@ TEST(integer_timercontainer_utest, rmtimer) {
     auto solt2 = std::make_shared<TimerSoltIns>();
     auto solt3 = std::make_shared<TimerSoltIns>();
     auto solt4 = std::make_shared<TimerSoltIns>();
-    auto timer = fdan::MakeIntegerTimer1Hour();
+    auto timer = fdan::MakeTimer1Hour();
 
     EXPECT_TRUE(timer->AddTimer(solt1, 10 * fdan::TU_MILLISECOND, true));
     EXPECT_TRUE(timer->AddTimer(solt2, 30 * fdan::TU_SECOND));
@@ -46,7 +46,7 @@ TEST(integer_timercontainer_utest, mintime) {
     auto solt2 = std::make_shared<TimerSoltIns>();
     auto solt3 = std::make_shared<TimerSoltIns>();
     auto solt4 = std::make_shared<TimerSoltIns>();
-    auto timer = fdan::MakeIntegerTimer1Hour();
+    auto timer = fdan::MakeTimer1Hour();
 
     EXPECT_TRUE(timer->AddTimer(solt1, 10 * fdan::TU_MILLISECOND));
     EXPECT_TRUE(timer->AddTimer(solt2, 30 * fdan::TU_SECOND));
@@ -66,7 +66,7 @@ TEST(integer_timercontainer_utest, timerrun1) {
     auto solt2 = std::make_shared<TimerSoltIns>();
     auto solt3 = std::make_shared<TimerSoltIns>();
     auto solt4 = std::make_shared<TimerSoltIns>();
-    auto timer = fdan::MakeIntegerTimer1Hour();
+    auto timer = fdan::MakeTimer1Hour();
 
     EXPECT_TRUE(timer->AddTimer(solt1, 20 * fdan::TU_MILLISECOND));
     EXPECT_TRUE(timer->AddTimer(solt2, 30 * fdan::TU_SECOND));
@@ -97,7 +97,7 @@ TEST(integer_timercontainer_utest, timerrun2) {
     auto solt2 = std::make_shared<TimerSoltIns>();
     auto solt3 = std::make_shared<TimerSoltIns>();
     auto solt4 = std::make_shared<TimerSoltIns>();
-    auto timer = fdan::MakeIntegerTimer1Hour();
+    auto timer = fdan::MakeTimer1Hour();
 
     EXPECT_TRUE(timer->AddTimer(solt1, 20 * fdan::TU_MILLISECOND));
     EXPECT_TRUE(timer->AddTimer(solt2, 31 * fdan::TU_SECOND, true));
@@ -131,7 +131,7 @@ TEST(integer_timercontainer_utest, timerrun3) {
     auto solt2 = std::make_shared<TimerSoltIns>();
     auto solt3 = std::make_shared<TimerSoltIns>();
     auto solt4 = std::make_shared<TimerSoltIns>();
-    auto timer = fdan::MakeIntegerTimer1Hour();
+    auto timer = fdan::MakeTimer1Hour();
 
     EXPECT_TRUE(timer->AddTimer(solt1, 20 * fdan::TU_MILLISECOND));
     EXPECT_TRUE(timer->AddTimer(solt2, 31 * fdan::TU_SECOND));

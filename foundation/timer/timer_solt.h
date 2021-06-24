@@ -20,17 +20,20 @@ public:
     ~TimerSolt() {}
 
 private:
-    enum TIMER_SOLT_FLAG {
-        TSF_IN_TIMER = 1 << 14,
-        TSF_ALWAYS   = 1 << 15,
+    enum TIMER_SOLT_FLAG: uint32_t {
+        TSF_IN_TIMER = (uint32_t)1 << 30,
+        TSF_ALWAYS   = (uint32_t)1 << 31,
     };
 
     // timer out call back
     virtual void OnTimer() = 0;
 
-    void SetInterval(TIME_UNIT tc, uint32_t interval, uint16_t current_time);
-    uint32_t GetInterval();
-    uint16_t GetBitmapIndex(TIME_UNIT tc);
+    void SetInterval(uint32_t interval);
+    uint32_t GetTotalInterval();
+    uint32_t GetLeftInterval();
+
+    void ResetTime();
+    uint32_t TimePass(uint32_t time);
 
     void SetInTimer();
     bool IsInTimer();
@@ -40,17 +43,13 @@ private:
     bool IsAlways();
     void RmAlways();
 
-    bool ShouldAddSubTimer(TIME_UNIT tc);
-
 private:
+    friend class TimerContainer;
     friend class TimerCombinContainer;
     friend class TimerIntegerContainer;
 
-    uint32_t _interval;
-
-    uint16_t _ms_index;
-    uint8_t  _second_index;
-    uint8_t  _minute_index;
+    uint32_t _total_interval;
+    uint32_t _left_interval;
 };
 
 }
