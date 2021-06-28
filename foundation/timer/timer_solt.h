@@ -56,9 +56,6 @@ public:
 
 private:
     friend class TimerContainer;
-    friend class TimerCombinContainer;
-    friend class TimerIntegerContainer;
-
     uint32_t _total_interval;
     uint32_t _left_interval;
 

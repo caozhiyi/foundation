@@ -3,7 +3,6 @@
 #include "common.h"
 #include "foundation/timer/timer_interface.h"
 
-
 TEST(timersolt_utest, index1) {
     TimerSoltIns t;
     t.SetCurIndex(25, fdan::TIT_MINUTE);

@@ -22,7 +22,7 @@ SysCallInt64Result OsHandle::TcpSocket(bool ipv4) {
 
     // both ipv6 and ipv4
     int32_t opt = 0;
-    if (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (char*)&opt, sizeof(opt)) != 0) {
+    if (setsockopt((SOCKET)sock, IPPROTO_IPV6, IPV6_V6ONLY, (char*)&opt, sizeof(opt)) != 0) {
         return { sock, (int32_t)GetLastError() };
     }
 
@@ -35,7 +35,7 @@ SysCallInt32Result OsHandle::Bind(int64_t sockfd, Address& address) {
         SOCKADDR_IN addr;
         addr.sin_family = AF_INET;
         addr.sin_port = htons(address.GetAddrPort());
-        addr.sin_addr.S_un.S_addr = inet_addr(address.GetIp().c_str());
+        inet_pton(AF_INET, address.GetIp().c_str(), &addr.sin_addr);
         ret = bind((SOCKET)sockfd, (sockaddr*)&addr, sizeof(addr));
 
     } else {
@@ -82,7 +82,7 @@ SysCallInt32Result OsHandle::Close(int64_t sockfd) {
 SysCallInt64Result OsHandle::Accept(int64_t sockfd, Address& address) {
     struct sockaddr_storage client_addr;
     socklen_t addr_size = sizeof(client_addr);
-    int64_t ret = accept(sockfd, (sockaddr*)&client_addr, &addr_size);
+    int64_t ret = accept((SOCKET)sockfd, (sockaddr*)&client_addr, &addr_size);
     if (ret < 0) {
         return { ret, (int32_t)GetLastError() };
     }
@@ -113,7 +113,7 @@ SysCallInt64Result OsHandle::Accept(int64_t sockfd, Address& address) {
 }
 
 SysCallInt32Result OsHandle::Write(int64_t sockfd, const char *data, uint32_t len) {
-    int32_t ret = send(sockfd, data, len, 0);
+    int32_t ret = send((SOCKET)sockfd, data, len, 0);
     if (ret < 0) {
         return { ret, (int32_t)GetLastError() };
     }
@@ -133,7 +133,7 @@ SysCallInt32Result OsHandle::Writev(int64_t sockfd, Iovec *vec, uint32_t vec_len
 }
 
 SysCallInt32Result OsHandle::Recv(int64_t sockfd, char *data, uint32_t len, uint16_t flag) {
-    int32_t ret = recv(sockfd, data, len, 0);
+    int32_t ret = recv((SOCKET)sockfd, data, len, 0);
     if (ret < 0) {
         return { ret, (int32_t)GetLastError() };
     }

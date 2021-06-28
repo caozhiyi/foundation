@@ -15,6 +15,11 @@ set(CXX_FLAGS
  -pipe
  )
 
+if (WIN32)
+  add_definitions(-D__win__)
+  add_definitions(-D__use_iocp__)
+endif ()
+
 if(CMAKE_BUILD_BITS EQUAL 32)
   list(APPEND CXX_FLAGS "-m32")
 else()

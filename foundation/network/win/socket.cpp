@@ -11,7 +11,7 @@ namespace fdan {
 
 int32_t SocketNoblocking(uint64_t sock) {
     unsigned long ul = 1;
-    return ioctlsocket(sock, FIONBIO, (unsigned long *)&ul);
+    return ioctlsocket((SOCKET)sock, FIONBIO, (unsigned long *)&ul);
 }
 
 int32_t ReusePort(uint64_t sock) {
@@ -24,7 +24,7 @@ bool CheckConnect(const uint64_t sock) {
     int32_t bytes = sizeof(seconds);
     int32_t iResult = 0;
 
-    iResult = getsockopt(sock, SOL_SOCKET, SO_CONNECT_TIME, (char*)&seconds, (PINT)&bytes);
+    iResult = getsockopt((SOCKET)sock, SOL_SOCKET, SO_CONNECT_TIME, (char*)&seconds, (PINT)&bytes);
     if (iResult != NO_ERROR) {
         return false;
 
