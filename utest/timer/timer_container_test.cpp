@@ -173,4 +173,6 @@ TEST(combin_timercontainer_utest, timerrun4) {
 
     timer->TimerRun(500);
     EXPECT_EQ(1000, timer->MinTime());
+
+    timer->TimerRun(2500);
 }

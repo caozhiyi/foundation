@@ -266,7 +266,7 @@ uint32_t TimerContainer::GetIndexLeftInterval(uint16_t index) {
 
 void TimerContainer::GetIndexTimer(std::vector<std::weak_ptr<TimerSolt>>& run_timer_solts, 
     std::vector<std::weak_ptr<TimerSolt>>& sub_timer_solts, uint32_t index, uint32_t time_pass) {
-    auto bucket_iter = _timer_wheel.find(_cur_time);
+    auto bucket_iter = _timer_wheel.find(index);
     if (bucket_iter == _timer_wheel.end()) {
         return;
     }
