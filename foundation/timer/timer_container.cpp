@@ -129,12 +129,40 @@ uint32_t TimerContainer::TimerRun(uint32_t time) {
     uint32_t time_pass = time / _time_unit;
     uint32_t left_time = time % _time_unit;
     uint32_t time_pass_with_unit = time_pass * _time_unit;
-
-    _cur_time += time_pass;
+    bool do_timer = time_pass > 0;
 
     if (left_time > 0) {
         uint32_t sub_run_step = _sub_timer->TimerRun(left_time);
+        if (sub_run_step > 0) {
+            do_timer = true;
+        }
         _cur_time += sub_run_step;
+    }
+
+    if (!do_timer) {
+        uint32_t run_setp = 0;
+        if (_cur_time >= _size) {
+            _cur_time -= _size;
+            run_setp++;
+        }
+        return run_setp;
+    }
+
+    std::vector<std::weak_ptr<TimerSolt>> run_timer_solts;
+    std::vector<std::weak_ptr<TimerSolt>> sub_timer_solts;
+
+    uint32_t prev_time = _cur_time;
+    _cur_time += time_pass;
+    while(1) {
+        int32_t next_time = _bitmap.GetMinAfter(prev_time);
+        if (next_time < 0) {
+            break;
+        }
+        if (next_time > _cur_time) {
+            break;
+        }
+        GetIndexTimer(run_timer_solts, sub_timer_solts, next_time, left_time);
+        prev_time = next_time + 1;
     }
 
     uint32_t run_setp = 0;
@@ -143,66 +171,24 @@ uint32_t TimerContainer::TimerRun(uint32_t time) {
         run_setp++;
     }
 
-    auto bucket_iter = _timer_wheel.find(_cur_time);
-    if (bucket_iter == _timer_wheel.end()) {
-        return run_setp;
-    }
-    auto& bucket = bucket_iter->second;
-
-    std::vector<std::weak_ptr<TimerSolt>> run_timer_solts;
-    std::vector<std::weak_ptr<TimerSolt>> sub_timer_solts;
-    for (auto timer_list = bucket.begin(); timer_list != bucket.end(); timer_list++) {
-        if (timer_list->first == 0) {
-            run_timer_solts.insert(run_timer_solts.end(), timer_list->second.begin(), timer_list->second.end());
-            continue;
-        }
-
-        if (timer_list->first <= left_time) {
-            run_timer_solts.insert(run_timer_solts.end(), timer_list->second.begin(), timer_list->second.end());
-            continue;
-        }
-
-        for (auto timer = timer_list->second.begin(); timer != timer_list->second.end(); timer++) {
-            auto target = timer->lock();
-            sub_timer_solts.push_back(target);
+    if (run_setp > 0) {
+        prev_time = 0;
+        while (1) {
+            int32_t next_time = _bitmap.GetMinAfter(prev_time);
+            if (next_time < 0) {
+                break;
+            }
+            if (next_time > _cur_time) {
+                break;
+            }
+            GetIndexTimer(run_timer_solts, sub_timer_solts, next_time, left_time);
+            prev_time = next_time + 1;
         }
     }
-
-    _bitmap.Remove(_cur_time);
-    _timer_wheel.erase(bucket_iter);
 
     // timer call back
-    for (auto iter = run_timer_solts.begin(); iter != run_timer_solts.end(); iter++) {
-        auto ptr = iter->lock();
-        if (!ptr) {
-            continue;
-        }
-        ptr->OnTimer();
-        ptr->RmInTimer();
+    DoTimer(run_timer_solts, sub_timer_solts);
 
-        // add timer again
-        if (ptr->IsAlways()) {
-            ptr->ResetTime();
-            auto root_timer = _root_timer.lock();
-            if (root_timer) {
-                root_timer->AddTimer(ptr, ptr->GetTotalInterval(), ptr->IsAlways());
-            } else {
-                AddTimer(ptr, ptr->GetTotalInterval(), ptr->IsAlways());
-            }
-        }
-    }
-
-    // add sub timer
-    if (!_sub_timer) {
-        return run_setp;
-    }
-    for (auto iter = sub_timer_solts.begin(); iter != sub_timer_solts.end(); iter++) {
-        auto ptr = iter->lock();
-        if (!ptr) {
-            continue;
-        }
-        _sub_timer->InnerAddTimer(ptr, ptr->GetLeftInterval());
-    }
     return run_setp;
 }
 
@@ -278,5 +264,71 @@ uint32_t TimerContainer::GetIndexLeftInterval(uint16_t index) {
     return left_interval;
 }
 
+void TimerContainer::GetIndexTimer(std::vector<std::weak_ptr<TimerSolt>>& run_timer_solts, 
+    std::vector<std::weak_ptr<TimerSolt>>& sub_timer_solts, uint32_t index, uint32_t time_pass) {
+    auto bucket_iter = _timer_wheel.find(_cur_time);
+    if (bucket_iter == _timer_wheel.end()) {
+        return;
+    }
+    auto& bucket = bucket_iter->second;
+
+
+    for (auto timer_list = bucket.begin(); timer_list != bucket.end(); timer_list++) {
+        if (timer_list->first == 0) {
+            run_timer_solts.insert(run_timer_solts.end(), timer_list->second.begin(), timer_list->second.end());
+            continue;
+        }
+
+        if (timer_list->first <= time_pass) {
+            run_timer_solts.insert(run_timer_solts.end(), timer_list->second.begin(), timer_list->second.end());
+            continue;
+        }
+
+        for (auto timer = timer_list->second.begin(); timer != timer_list->second.end(); timer++) {
+            auto target = timer->lock();
+            sub_timer_solts.push_back(target);
+        }
+    }
+
+    _bitmap.Remove(_cur_time);
+    _timer_wheel.erase(bucket_iter);
+}
+
+void TimerContainer::DoTimer(std::vector<std::weak_ptr<TimerSolt>>& run_timer_solts,
+    std::vector<std::weak_ptr<TimerSolt>>& sub_timer_solts) {
+    // timer call back
+    for (auto iter = run_timer_solts.begin(); iter != run_timer_solts.end(); iter++) {
+        auto ptr = iter->lock();
+        if (!ptr) {
+            continue;
+        }
+        ptr->OnTimer();
+        ptr->RmInTimer();
+
+        // add timer again
+        if (ptr->IsAlways()) {
+            ptr->ResetTime();
+            auto root_timer = _root_timer.lock();
+            if (root_timer) {
+                root_timer->AddTimer(ptr, ptr->GetTotalInterval(), ptr->IsAlways());
+            }
+            else {
+                AddTimer(ptr, ptr->GetTotalInterval(), ptr->IsAlways());
+            }
+        }
+    }
+
+    // add sub timer
+    if (!_sub_timer) {
+        return;
+    }
+    for (auto iter = sub_timer_solts.begin(); iter != sub_timer_solts.end(); iter++) {
+        auto ptr = iter->lock();
+        if (!ptr) {
+            continue;
+        }
+        _sub_timer->InnerAddTimer(ptr, ptr->GetLeftInterval());
+    }
+}
 
 }

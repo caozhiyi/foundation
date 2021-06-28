@@ -54,6 +54,10 @@ public:
 protected:
     uint16_t TimeUnit2TimeType(TIME_UNIT tu);
     uint32_t GetIndexLeftInterval(uint16_t index);
+    void GetIndexTimer(std::vector<std::weak_ptr<TimerSolt>>& run_timer_solts, 
+        std::vector<std::weak_ptr<TimerSolt>>& sub_timer_solts, uint32_t index, uint32_t time_pass);
+    void DoTimer(std::vector<std::weak_ptr<TimerSolt>>& run_timer_solts,
+        std::vector<std::weak_ptr<TimerSolt>>& sub_timer_solts);
 
 protected:
     TIME_UNIT _time_unit;

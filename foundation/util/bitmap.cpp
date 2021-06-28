@@ -71,7 +71,7 @@ bool Bitmap::Remove(uint32_t index) {
 
 int32_t Bitmap::GetMinAfter(uint32_t index) {
     // get next bit.
-    if (index > _bitmap.size() * __step_size || Empty()) {
+    if (index >= _bitmap.size() * __step_size || Empty()) {
         return -1;
     }
 
@@ -126,7 +126,7 @@ bool Bitmap::Empty() {
 
 void Bitmap::Clear() {
     while (_vec_bitmap != 0) {
-        int32_t next_vec_index = (int32_t)std::log2f(float(_vec_bitmap & (-_vec_bitmap) + 1));
+        int32_t next_vec_index = (int32_t)std::log2f(float(_vec_bitmap & (-(int32_t)_vec_bitmap) + 1));
         _bitmap[next_vec_index] = 0;
         _vec_bitmap = _vec_bitmap & (_vec_bitmap - 1);
     }
