@@ -6,6 +6,7 @@
 #ifndef COMMON_TIMER_TIMER_CONTAINER
 #define COMMON_TIMER_TIMER_CONTAINER
 
+#include <map>
 #include <list>
 #include <memory>
 #include <unordered_map>
@@ -25,29 +26,34 @@ class TimerContainer:
 
 public:
     TimerContainer(std::shared_ptr<TimerContainer> sub_timer, TIME_UNIT unit, TIME_UNIT max);
-    virtual ~TimerContainer();
+    ~TimerContainer();
 
-    virtual bool AddTimer(std::weak_ptr<TimerSolt> t, uint32_t time, bool always = false);
-    virtual bool RmTimer(std::weak_ptr<TimerSolt> t);
+    bool AddTimer(std::weak_ptr<TimerSolt> t, uint32_t time, bool always = false);
+    bool RmTimer(std::weak_ptr<TimerSolt> t);
 
     // get min next time out time
     // return
     // >= 0 : the next time
     //  < 0 : has no timer
-    virtual int32_t MinTime();
+    int32_t MinTime();
     // return the timer wheel current time
-    virtual int32_t CurrentTimer();
+    int32_t CurrentTimer();
     // timer wheel run time 
     // return carry
-    virtual uint32_t TimerRun(uint32_t step);
+    uint32_t TimerRun(uint32_t step);
 
-    virtual bool Empty();
+    bool Empty();
+    void Clear();
 
     // get current timer wheel timeout time
-    virtual int32_t LocalMinTime();
-    virtual bool InnerAddTimer(std::shared_ptr<TimerSolt> ptr, uint32_t time);
+    int32_t LocalMinTime();
+    bool InnerAddTimer(std::shared_ptr<TimerSolt> ptr, uint32_t time);
 
     void SetRootTimer(std::shared_ptr<TimerContainer> timer) { _root_timer = timer; }
+
+protected:
+    uint16_t TimeUnit2TimeType(TIME_UNIT tu);
+    uint32_t GetIndexLeftInterval(uint16_t index);
 
 protected:
     TIME_UNIT _time_unit;
@@ -58,7 +64,8 @@ protected:
     Bitmap   _bitmap;
     std::weak_ptr<TimerContainer>   _root_timer;
     std::shared_ptr<TimerContainer> _sub_timer;
-    std::unordered_map<uint32_t, std::list<std::weak_ptr<TimerSolt>>> _timer_wheel;
+    std::unordered_map<uint32_t, std::map<uint32_t, std::list<std::weak_ptr<TimerSolt>>>> _timer_wheel;
+    //std::unordered_map<uint32_t, std::list<std::weak_ptr<TimerSolt>>> _timer_wheel;
 };
 
 }

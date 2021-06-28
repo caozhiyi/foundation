@@ -11,7 +11,7 @@ TimerSolt::TimerSolt():
     _total_interval(0),
     _left_interval(0) {
 
-} 
+}
 
 void TimerSolt::SetInterval(uint32_t interval) {
     _total_interval = interval;
@@ -29,6 +29,7 @@ uint32_t TimerSolt::GetLeftInterval() {
 
 void TimerSolt::ResetTime() {
     _left_interval = _total_interval;
+    _cur_index = 0;
 }
 
 uint32_t TimerSolt::TimePass(uint32_t time) {
@@ -58,6 +59,15 @@ bool TimerSolt::IsAlways() {
 
 void TimerSolt::RmAlways() {
     _total_interval &= ~TSF_ALWAYS;
+}
+
+void TimerSolt::SetCurIndex(uint16_t index, uint16_t type) {
+    _cur_index = index | type;
+}
+
+void TimerSolt::GetCurIndex(uint16_t& index, uint16_t& type) {
+    index = _cur_index & ~TIT_MUSK;
+    type = _cur_index & TIT_MUSK;
 }
 
 }

@@ -39,6 +39,7 @@ bool TimerContainer::AddTimer(std::weak_ptr<TimerSolt> t, uint32_t time, bool al
 
     // set current timer unit interval
     if (!ptr->IsInTimer()) {
+        ptr->SetInterval(time);
         ptr->SetInTimer();
         if (always) {
             ptr->SetAlways();
@@ -56,8 +57,40 @@ bool TimerContainer::RmTimer(std::weak_ptr<TimerSolt> t) {
     if (!ptr) {
         return false;
     }
-    ptr->RmInTimer();
-    return true;
+
+    uint16_t cur_index = 0;
+    uint16_t type = 0;
+    ptr->GetCurIndex(cur_index, type);
+    if (type == TimeUnit2TimeType(_time_unit)) {
+        ptr->RmInTimer();
+        _bitmap.Remove(cur_index);
+        uint32_t left_time = ptr->GetLeftInterval();
+        auto timer_map = _timer_wheel.find(cur_index);
+        if (timer_map == _timer_wheel.end()) {
+            return true;
+        }
+        // don't have sub timer
+        if (!_sub_timer) {
+            left_time = 0;
+        }
+        auto timer_list = timer_map->second.find(left_time);
+        if (timer_list == timer_map->second.end()) {
+            return false;
+        }
+        for (auto timer = timer_list->second.begin(); timer != timer_list->second.end(); ++timer) {
+            auto target = timer->lock();
+            if (target == ptr) {
+                timer_list->second.erase(timer);
+                return true;
+            }
+        }
+        return true;
+    }
+
+    if (_sub_timer) {
+        return _sub_timer->RmTimer(t);
+    }
+    return false;
 }
 
 int32_t TimerContainer::MinTime() {
@@ -94,12 +127,13 @@ int32_t TimerContainer::CurrentTimer() {
 
 uint32_t TimerContainer::TimerRun(uint32_t time) {
     uint32_t time_pass = time / _time_unit;
-    uint32_t time_pass_unit = time_pass * _time_unit;
+    uint32_t left_time = time % _time_unit;
+    uint32_t time_pass_with_unit = time_pass * _time_unit;
+
     _cur_time += time_pass;
 
-    time = time % _time_unit;
-    if (time > 0) {
-        uint32_t sub_run_step = _sub_timer->TimerRun(time);
+    if (left_time > 0) {
+        uint32_t sub_run_step = _sub_timer->TimerRun(left_time);
         _cur_time += sub_run_step;
     }
 
@@ -114,37 +148,60 @@ uint32_t TimerContainer::TimerRun(uint32_t time) {
         return run_setp;
     }
     auto& bucket = bucket_iter->second;
-    std::vector<std::shared_ptr<TimerSolt>> run_timer_solts;
 
-    for (auto iter = bucket.begin(); iter != bucket.end(); iter++) {
-        auto ptr = (iter)->lock();
-        if (ptr && ptr->IsInTimer()) {
-            run_timer_solts.push_back(ptr);
+    std::vector<std::weak_ptr<TimerSolt>> run_timer_solts;
+    std::vector<std::weak_ptr<TimerSolt>> sub_timer_solts;
+    for (auto timer_list = bucket.begin(); timer_list != bucket.end(); timer_list++) {
+        if (timer_list->first == 0) {
+            run_timer_solts.insert(run_timer_solts.end(), timer_list->second.begin(), timer_list->second.end());
+            continue;
+        }
+
+        if (timer_list->first <= left_time) {
+            run_timer_solts.insert(run_timer_solts.end(), timer_list->second.begin(), timer_list->second.end());
+            continue;
+        }
+
+        for (auto timer = timer_list->second.begin(); timer != timer_list->second.end(); timer++) {
+            auto target = timer->lock();
+            sub_timer_solts.push_back(target);
         }
     }
 
     _bitmap.Remove(_cur_time);
     _timer_wheel.erase(bucket_iter);
 
+    // timer call back
     for (auto iter = run_timer_solts.begin(); iter != run_timer_solts.end(); iter++) {
-        auto ptr = *iter;
+        auto ptr = iter->lock();
+        if (!ptr) {
+            continue;
+        }
+        ptr->OnTimer();
+        ptr->RmInTimer();
 
-        uint32_t left_interval = ptr->TimePass(time_pass_unit);
-        if (left_interval > 0) {
-            InnerAddTimer(ptr, left_interval);
-
-        } else {
-            ptr->OnTimer();
-            // add timer again
-            if (ptr->IsAlways()) {
-                auto root_timer = _root_timer.lock();
-                if (root_timer) {
-                    root_timer->AddTimer(ptr, ptr->GetTotalInterval(), ptr->IsAlways());
-                } else {
-                    AddTimer(ptr, ptr->GetTotalInterval(), ptr->IsAlways());
-                }
+        // add timer again
+        if (ptr->IsAlways()) {
+            ptr->ResetTime();
+            auto root_timer = _root_timer.lock();
+            if (root_timer) {
+                root_timer->AddTimer(ptr, ptr->GetTotalInterval(), ptr->IsAlways());
+            } else {
+                AddTimer(ptr, ptr->GetTotalInterval(), ptr->IsAlways());
             }
         }
+    }
+
+    // add sub timer
+    if (!_sub_timer) {
+        return run_setp;
+    }
+    for (auto iter = sub_timer_solts.begin(); iter != sub_timer_solts.end(); iter++) {
+        auto ptr = iter->lock();
+        if (!ptr) {
+            continue;
+        }
+        _sub_timer->InnerAddTimer(ptr, ptr->GetLeftInterval());
     }
     return run_setp;
 }
@@ -153,21 +210,25 @@ bool TimerContainer::Empty() {
     return _bitmap.Empty();
 }
 
+void TimerContainer::Clear() {
+    _bitmap.Clear();
+    _timer_wheel.clear();
+    if (_sub_timer) {
+        _sub_timer->Clear();
+    }
+}
+
 int32_t TimerContainer::LocalMinTime() {
     int32_t next_time = _bitmap.GetMinAfter(_cur_time);
     if (next_time >= 0) {
-        if (next_time <= _cur_time) {
-            return (next_time - _cur_time + _size) * _time_unit;
-
-        } else {
-            return (next_time - _cur_time) * _time_unit;
-        }
+        return (next_time - _cur_time) * _time_unit + GetIndexLeftInterval(next_time);
     }
 
     if (_cur_time > 0) {
         next_time = _bitmap.GetMinAfter(0);
+        
         if (next_time >= 0) {
-            return (next_time + _size - _cur_time) * _time_unit;
+            return (next_time + _size - _cur_time) * _time_unit + GetIndexLeftInterval(next_time);
         }
     }
     return NO_TIMER;
@@ -178,12 +239,43 @@ bool TimerContainer::InnerAddTimer(std::shared_ptr<TimerSolt> ptr, uint32_t time
         return false;
     }
     
-    time /= _time_unit; 
-    // get current timer index
-    uint32_t index = time + _cur_time;
+    uint16_t cur_index = time / _time_unit + _cur_time;
+    if (cur_index >= _size) {
+        cur_index -= _size;
+    }
+    uint32_t left_time = time % _time_unit;
+    // don't have sub timer
+    if (!_sub_timer) {
+        left_time = 0;
+    }
+    ptr->SetCurIndex(cur_index, TimeUnit2TimeType(_time_unit));
+    ptr->TimePass(time - left_time);
 
-    _timer_wheel[index].push_back(ptr);
-    return _bitmap.Insert(index);
+    _timer_wheel[cur_index][left_time].push_back(ptr);
+    return _bitmap.Insert(cur_index);
+}
+
+uint16_t TimerContainer::TimeUnit2TimeType(TIME_UNIT tu) {
+    switch (tu)
+    {
+    case fdan::TU_MILLISECOND:
+        return TIT_MILLISECOND;
+    case fdan::TU_SECOND:
+        return TIT_SECOND;
+    case fdan::TU_MINUTE:
+        return TIT_MINUTE;
+    default:
+        throw "invalid time unit";
+    }
+}
+
+uint32_t TimerContainer::GetIndexLeftInterval(uint16_t index) {
+    uint32_t left_interval = 0;
+    auto timer_map = _timer_wheel.find(index);
+    if (timer_map != _timer_wheel.end() && !timer_map->second.empty()) {
+        left_interval = timer_map->second.begin()->first;
+    }
+    return left_interval;
 }
 
 

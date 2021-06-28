@@ -124,4 +124,12 @@ bool Bitmap::Empty() {
     return _vec_bitmap == 0;
 }
 
+void Bitmap::Clear() {
+    while (_vec_bitmap != 0) {
+        uint32_t next_vec_index = (uint32_t)std::log2f(float(_vec_bitmap & (-_vec_bitmap) + 1));
+        _bitmap[next_vec_index] = 0;
+        _vec_bitmap = _vec_bitmap & (_vec_bitmap - 1);
+    }
+}
+
 }

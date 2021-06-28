@@ -35,6 +35,8 @@ public:
     // bitmap is empty
     bool Empty();
 
+    void Clear();
+
 private:
     // which index of vector used
     uint32_t _vec_bitmap;
