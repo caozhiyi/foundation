@@ -2,11 +2,12 @@
 // that can be found in the LICENSE file.
 
 // Author: caozhiyi (caozhiyi5@gmail.com)
+// Copyright <caozhiyi5@gmail.com>
 
-#ifndef COMMON_ALLOTER_POOL_BLOCK
-#define COMMON_ALLOTER_POOL_BLOCK
+#ifndef FOUNDATION_ALLOTER_POOL_BLOCK_H_
+#define FOUNDATION_ALLOTER_POOL_BLOCK_H_
 
-#ifdef __use_iocp__
+#ifdef F_POOL_THREAD_SAFE
 #include <mutex>
 #endif
 #include <vector>
@@ -17,37 +18,38 @@ namespace fdan {
 
 // all memory must return memory pool before destroy.
 class BlockMemoryPool {
-public:
-    // bulk memory size. 
-    // every time add nodes num
-    BlockMemoryPool(uint32_t large_sz, uint32_t add_num);
-    virtual ~BlockMemoryPool();
+ public:
+  // bulk memory size.
+  // every time add nodes num
+  BlockMemoryPool(uint32_t large_sz, uint32_t add_num);
+  virtual ~BlockMemoryPool();
 
-    // for bulk memory. 
-    // return one bulk memory node
-    virtual void* PoolLargeMalloc();
-    virtual void PoolLargeFree(void* &m);
+  // for bulk memory.
+  // return one bulk memory node
+  virtual void* PoolLargeMalloc();
+  virtual void PoolLargeFree(void* &m);
 
-    // return bulk memory list size
-    virtual uint32_t GetSize();
-    // return length of bulk memory
-    virtual uint32_t GetBlockLength();
+  // return bulk memory list size
+  virtual uint32_t GetSize();
+  // return length of bulk memory
+  virtual uint32_t GetBlockLength();
 
-    // release half memory
-    virtual void ReleaseHalf();
-    virtual void Expansion(uint32_t num = 0);
+  // release half memory
+  virtual void ReleaseHalf();
+  virtual void Expansion(uint32_t num = 0);
 
-private:
-#ifdef __use_iocp__
-    std::mutex                _mutex;
+ private:
+#ifdef F_POOL_THREAD_SAFE
+  std::mutex          mutex_;
 #endif
-    uint32_t                  _number_large_add_nodes; //every time add nodes num
-    uint32_t                  _large_size;             //bulk memory size
-    std::vector<void*>        _free_mem_vec;           //free bulk memory list
+  uint32_t            number_large_add_nodes_;  // every time add nodes num
+  uint32_t            large_size_;              // bulk memory size
+  std::vector<void*>  free_mem_vec_;            // free bulk memory list
 };
 
-std::shared_ptr<BlockMemoryPool> MakeBlockMemoryPoolPtr(uint32_t large_sz, uint32_t add_num);
+std::shared_ptr<BlockMemoryPool> MakeBlockMemoryPoolPtr(uint32_t large_sz,
+  uint32_t add_num);
 
-}
+}  // namespace fdan
 
-#endif
+#endif  // FOUNDATION_ALLOTER_POOL_BLOCK_H_

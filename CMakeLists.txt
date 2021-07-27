@@ -26,6 +26,7 @@ else()
   list(APPEND CXX_FLAGS "-m64")
 endif()
 
+include_directories(.)
 aux_source_directory(${PROJECT_SOURCE_DIR}/foundation/alloter src_files)
 aux_source_directory(${PROJECT_SOURCE_DIR}/foundation/buffer src_files)
 aux_source_directory(${PROJECT_SOURCE_DIR}/foundation/log src_files)

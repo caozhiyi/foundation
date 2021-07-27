@@ -2,59 +2,63 @@
 // that can be found in the LICENSE file.
 
 // Author: caozhiyi (caozhiyi5@gmail.com)
+// Copyright <caozhiyi5@gmail.com>
 
-#ifndef COMMON_ALLOTER_POOL_ALLOTER
-#define COMMON_ALLOTER_POOL_ALLOTER
+#ifndef FOUNDATION_ALLOTER_POOL_ALLOTER_H_
+#define FOUNDATION_ALLOTER_POOL_ALLOTER_H_
 
-#ifdef __use_iocp__
+#ifdef F_POOL_THREAD_SAFE
 #include <mutex>
 #endif
+#include <memory>
 #include <vector>
 #include <cstdint>
-#include "alloter_interface.h"
+
+#include "foundation/alloter/alloter_interface.h"
 
 namespace fdan {
 
-static const uint32_t __default_max_bytes = 256;
-static const uint32_t __default_number_of_free_lists = __default_max_bytes / __align;
-static const uint32_t __default_number_add_nodes = 20;
+static const uint32_t kDefaultMaxBytes = 256;
+static const uint32_t kDefaultNumberOfFreeLists = kDefaultMaxBytes / kAlign;
+static const uint32_t kDefaultNumberAddNodes = 20;
 
 class PoolAlloter : public Alloter {
-public:
-    PoolAlloter();
-    ~PoolAlloter();
+ public:
+  PoolAlloter();
+  ~PoolAlloter();
 
-    void* Malloc(uint32_t size);
-    void* MallocAlign(uint32_t size);
-    void* MallocZero(uint32_t size);
+  void* Malloc(uint32_t size);
+  void* MallocAlign(uint32_t size);
+  void* MallocZero(uint32_t size);
 
-    void Free(void* &data, uint32_t len);
-private:
-    uint32_t FreeListIndex(uint32_t size, uint32_t align = __align) {
-        return (size + align - 1) / align - 1;
-    }
-    
-    void* ReFill(uint32_t size, uint32_t num = __default_number_add_nodes);
-    void* ChunkAlloc(uint32_t size, uint32_t& nums);
+  void Free(void* &data, uint32_t len);
 
-private:
-    union MemNode {
-        MemNode*    _next;
-        char        _data[1];
-    };
-    
-#ifdef __use_iocp__
-    std::mutex _mutex;
+ private:
+  uint32_t FreeListIndex(uint32_t size, uint32_t align = kAlign) {
+    return (size + align - 1) / align - 1;
+  }
+
+  void* ReFill(uint32_t size, uint32_t num = kDefaultNumberAddNodes);
+  void* ChunkAlloc(uint32_t size, uint32_t& nums);
+
+ private:
+  union MemNode {
+    MemNode* next;
+    char     data[1];
+};
+
+#ifdef F_POOL_THREAD_SAFE
+    std::mutex mutex_;
 #endif
-    char*  _pool_start;         
-    char*  _pool_end;
-    std::vector<MemNode*> _free_list;  
-    std::vector<char*>    _malloc_vec;
-    std::shared_ptr<Alloter> _alloter;
+  char*  pool_start_;
+  char*  pool_end_;
+  std::vector<MemNode*> free_list_;
+  std::vector<char*>    malloc_vec_;
+  std::shared_ptr<Alloter> alloter_;
 };
 
 std::shared_ptr<Alloter> MakePoolAlloterPtr();
 
-}
+}  // namespace fdan
 
-#endif 
+#endif  // FOUNDATION_ALLOTER_POOL_ALLOTER_H_
