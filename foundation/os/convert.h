@@ -2,9 +2,10 @@
 // that can be found in the LICENSE file.
 
 // Author: caozhiyi (caozhiyi5@gmail.com)
+// Copyright <caozhiyi5@gmail.com>
 
-#ifndef COMMON_OS_CONVERT
-#define COMMON_OS_CONVERT
+#ifndef FOUNDATION_OS_CONVERT_H_
+#define FOUNDATION_OS_CONVERT_H_
 
 #include <cstdint>
 
@@ -14,6 +15,6 @@ void Localtime(const uint64_t* time, void* out_tm);
 
 char* ErrnoInfo(uint32_t err);
 
-}
+}  // namespace fdan
 
-#endif
+#endif  // FOUNDATION_OS_CONVERT_H_
