@@ -2,9 +2,10 @@
 // that can be found in the LICENSE file.
 
 // Author: caozhiyi (caozhiyi5@gmail.com)
+// Copyright <caozhiyi5@gmail.com>
 
-#ifndef COMMON_NETWORK_ADDRESS
-#define COMMON_NETWORK_ADDRESS
+#ifndef FOUNDATION_NETWORK_ADDRESS_H_
+#define FOUNDATION_NETWORK_ADDRESS_H_
 
 #include <string>
 #include <cstdint>
@@ -12,43 +13,43 @@
 namespace fdan {
 
 enum AddressType {
-    AT_IPV4  = 0x1,
-    AT_IPV6  = 0x2,
+  AT_IPV4  = 0x1,
+  AT_IPV6  = 0x2,
 };
 
 class Address {
-public:
-    Address();
-    Address(AddressType at);
-    Address(AddressType at, const std::string& ip, uint16_t port);
-    Address(const Address& addr);
-    ~Address();
+ public:
+  Address();
+  explicit Address(AddressType at);
+  explicit Address(AddressType at, const std::string& ip, uint16_t port);
+  explicit Address(const Address& addr);
+  ~Address();
 
-    void SetType(AddressType at) { _address_type = at; }
-    AddressType GetType() { return _address_type; }
+  void SetType(AddressType at) { address_type_ = at; }
+  AddressType GetType() const { return address_type_; }
 
-    void SetIp(const std::string& ip);
-    const std::string& GetIp() { return _ip; }
+  void SetIp(const std::string& ip);
+  const std::string& GetIp() const { return ip_; }
 
-    void SetAddrPort(uint16_t port) { _port = port; }
-    uint16_t GetAddrPort() { return _port; }
+  void SetAddrPort(uint16_t port) { port_ = port; }
+  uint16_t GetAddrPort() const { return port_; }
 
-    const std::string AsString();
+  const std::string AsString();
 
-    friend std::ostream& operator<< (std::ostream &out, Address &addr);
-    friend bool operator==(const Address &addr1, const Address &addr2);
+  friend std::ostream& operator<< (std::ostream &out, Address &addr);
+  friend bool operator==(const Address &addr1, const Address &addr2);
 
-private:
-    bool IsIpv4(const std::string& ip);
-    std::string ToIpv6(const std::string& ip);
-    std::string ToIpv4(const std::string& ip);
+ private:
+  bool IsIpv4(const std::string& ip);
+  std::string ToIpv6(const std::string& ip);
+  std::string ToIpv4(const std::string& ip);
 
-protected:
-    AddressType _address_type;
-    std::string _ip;
-    uint16_t _port;
+ protected:
+  AddressType address_type_;
+  std::string ip_;
+  uint16_t    port_;
 };
 
-}
+}  // namespace fdan
 
-#endif
+#endif  // FOUNDATION_NETWORK_ADDRESS_H_

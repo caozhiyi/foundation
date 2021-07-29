@@ -2,9 +2,10 @@
 // that can be found in the LICENSE file.
 
 // Author: caozhiyi (caozhiyi5@gmail.com)
+// Copyright <caozhiyi5@gmail.com>
 
-#ifndef COMMON_NETWORK_SOCKET
-#define COMMON_NETWORK_SOCKET
+#ifndef FOUNDATION_NETWORK_SOCKET_H_
+#define FOUNDATION_NETWORK_SOCKET_H_
 
 #include <cstdint>
 
@@ -17,5 +18,6 @@ int32_t ReusePort(uint64_t sock);
 // check socket connect
 bool CheckConnect(const uint64_t sock);
 
-}
-#endif
+}  // namespace fdan
+
+#endif  // FOUNDATION_NETWORK_SOCKET_H_
