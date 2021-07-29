@@ -2,58 +2,55 @@
 // that can be found in the LICENSE file.
 
 // Author: caozhiyi (caozhiyi5@gmail.com)
+// Copyright <caozhiyi5@gmail.com>
 
 #include <iostream>
-#include "stdout_logger.h"
+#include "foundation/log/stdout_logger.h"
 
 namespace fdan {
 
-StdoutLogger::StdoutLogger() {
+StdoutLogger::StdoutLogger() {}
 
+StdoutLogger::~StdoutLogger() {}
+
+void StdoutLogger::Debug(const std::shared_ptr<Log>& log) {
+  {
+    std::unique_lock<std::mutex> lock(mutex_);
+    std::cout<< log->log << std::endl;
+  }
+  Logger::Debug(log);
 }
 
-StdoutLogger::~StdoutLogger() {
-
+void StdoutLogger::Info(const std::shared_ptr<Log>& log) {
+  {
+    std::unique_lock<std::mutex> lock(mutex_);
+    std::cout<< log->log << std::endl;
+  }
+  Logger::Info(log);
 }
 
-void StdoutLogger::Debug(std::shared_ptr<Log>& log) {
-    {
-        std::unique_lock<std::mutex> lock(_mutex);
-        std::cout<< log->_log << std::endl;
-    }
-    Logger::Debug(log);
+void StdoutLogger::Warn(const std::shared_ptr<Log>& log) {
+  {
+    std::unique_lock<std::mutex> lock(mutex_);
+    std::cout<< log->log << std::endl;
+  }
+  Logger::Warn(log);
 }
 
-void StdoutLogger::Info(std::shared_ptr<Log>& log) {
-    {
-        std::unique_lock<std::mutex> lock(_mutex);
-        std::cout<< log->_log << std::endl;
-    }
-    Logger::Info(log);
+void StdoutLogger::Error(const std::shared_ptr<Log>& log) {
+  {
+    std::unique_lock<std::mutex> lock(mutex_);
+    std::cerr<< log->log << std::endl;
+  }
+  Logger::Error(log);
 }
 
-void StdoutLogger::Warn(std::shared_ptr<Log>& log) {
-    {
-        std::unique_lock<std::mutex> lock(_mutex);
-        std::cout<< log->_log << std::endl;
-    }
-    Logger::Warn(log);
+void StdoutLogger::Fatal(const std::shared_ptr<Log>& log) {
+  {
+    std::unique_lock<std::mutex> lock(mutex_);
+    std::cerr<< log->log << std::endl;
+  }
+  Logger::Fatal(log);
 }
 
-void StdoutLogger::Error(std::shared_ptr<Log>& log) {
-    {
-        std::unique_lock<std::mutex> lock(_mutex);
-        std::cerr<< log->_log << std::endl;
-    }
-    Logger::Error(log);
-}
-
-void StdoutLogger::Fatal(std::shared_ptr<Log>& log) {
-    {
-        std::unique_lock<std::mutex> lock(_mutex);
-        std::cerr<< log->_log << std::endl;
-    }
-    Logger::Fatal(log);
-}
-
-}
+}  // namespace fdan

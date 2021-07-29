@@ -2,133 +2,133 @@
 // that can be found in the LICENSE file.
 
 // Author: caozhiyi (caozhiyi5@gmail.com)
+// Copyright <caozhiyi5@gmail.com>
 
 #include <cstdio>
 #include <cstring>
 
-#include "file_logger.h"
-#include "../util/time.h"
+#include "foundation/util/time.h"
+#include "foundation/log/file_logger.h"
 
 namespace fdan {
 
-FileLogger::FileLogger(const std::string& file, 
-    FileLoggerSpiltUnit unit, 
-    uint16_t max_store_days,
-    uint16_t time_offset):
-    _file_name(file),
-    _time_offset(time_offset),
-    _spilt_unit(unit) {
+FileLogger::FileLogger(const std::string& file,
+  FileLoggerSpiltUnit unit,
+  uint16_t max_store_days,
+  uint16_t time_offset):
+  file_name_(file),
+  time_offset_(time_offset),
+  spilt_unit_(unit) {
+  if (unit == FLSU_HOUR) {
+    time_buf_len_ = 13;  // xxxx-xx-xx:xx
+    max_file_num_ = max_store_days * 24;
 
-    if (unit == FLSU_HOUR) {
-        _time_buf_len = 13; // xxxx-xx-xx:xx
-        _max_file_num = max_store_days * 24;
+  } else {
+    time_buf_len_ = 10;  // xxxx-xx-xx
+    max_file_num_ = max_store_days;
+  }
 
-    } else {
-        _time_buf_len = 10; // xxxx-xx-xx
-        _max_file_num = max_store_days;
-    }
+  memset(time_, 0, kFileLoggerTimeBufLength);
 
-    memset(_time, 0, __file_logger_time_buf_size);
-
-    Start();
+  Start();
 }
 
 FileLogger::~FileLogger() {
-    Stop();
-    Join();
-    _stream.close();
+  Stop();
+  Join();
+  stream_.close();
 }
 
 void FileLogger::Run() {
-     while (!_stop) {
-        auto log = Pop();
-        if (log) {
-            CheckTime(log->_log);
-            if (_stream.is_open()) {
-                _stream.write(log->_log, log->_len);
-                _stream.put('\n');
-                _stream.flush();
-            }
+  while (!_stop) {
+    auto log = Pop();
+    if (log) {
+      CheckTime(log->log);
+      if (stream_.is_open()) {
+        stream_.write(log->log, log->len);
+        stream_.put('\n');
+        stream_.flush();
+      }
 
-        } else {
-            break;
-        }
+    } else {
+      break;
     }
+  }
 }
 
 void FileLogger::Stop() {
-    _stop = true;
-    Push(nullptr);
+  _stop = true;
+  Push(nullptr);
 }
 
-void FileLogger::Debug(std::shared_ptr<Log>& log) {
-    Push(log);
-    Logger::Debug(log);
+void FileLogger::Debug(const std::shared_ptr<Log>& log) {
+  Push(log);
+  Logger::Debug(log);
 }
 
-void FileLogger::Info(std::shared_ptr<Log>& log) {
-    Push(log);
-    Logger::Info(log);
+void FileLogger::Info(const std::shared_ptr<Log>& log) {
+  Push(log);
+  Logger::Info(log);
 }
 
-void FileLogger::Warn(std::shared_ptr<Log>& log) {
-    Push(log);
-    Logger::Warn(log);
+void FileLogger::Warn(const std::shared_ptr<Log>& log) {
+  Push(log);
+  Logger::Warn(log);
 }
 
-void FileLogger::Error(std::shared_ptr<Log>& log) {
-    Push(log);
-    Logger::Error(log);
+void FileLogger::Error(const std::shared_ptr<Log>& log) {
+  Push(log);
+  Logger::Error(log);
 }
 
-void FileLogger::Fatal(std::shared_ptr<Log>& log) {
-    Push(log);
-    Logger::Fatal(log);
+void FileLogger::Fatal(const std::shared_ptr<Log>& log) {
+  Push(log);
+  Logger::Fatal(log);
 }
 
 void FileLogger::SetMaxStoreDays(uint16_t max) {
-    if (_spilt_unit == FLSU_HOUR) {
-        _time_buf_len = 13; // xxxx-xx-xx:xx
-        _max_file_num = max * 24;
+  if (spilt_unit_ == FLSU_HOUR) {
+    time_buf_len_ = 13;  // xxxx-xx-xx:xx
+    max_file_num_ = max * 24;
 
-    } else {
-        _time_buf_len = 10; // xxxx-xx-xx
-        _max_file_num = max;
-    }
+  } else {
+    time_buf_len_ = 10;  // xxxx-xx-xx
+    max_file_num_ = max;
+  }
 
-    CheckExpireFiles();
+  CheckExpireFiles();
 }
 
 void FileLogger::CheckTime(char* log) {
-    if (strncmp(_time, log + _time_offset, _time_buf_len) == 0) {
-        return;
-    }
+  if (strncmp(time_, log + time_offset_, time_buf_len_) == 0) {
+    return;
+  }
 
-    if (_stream.is_open()) {
-        _stream.close();
-    }
-    
-    // get new time and file name
-    memcpy(_time, log + _time_offset, _time_buf_len);
-    std::string file_name(_file_name);
-    file_name.append(".");
-    file_name.append(_time, _time_buf_len);
-    file_name.append(".log");
+  if (stream_.is_open()) {
+    stream_.close();
+  }
 
-    _history_file_names.push(file_name);
-    CheckExpireFiles();
+  // get new time and file name
+  memcpy(time_, log + time_offset_, time_buf_len_);
+  std::string file_name(file_name_);
+  file_name.append(".");
+  file_name.append(time_, time_buf_len_);
+  file_name.append(".log");
 
-    // open new log file
-    _stream.open(file_name.c_str(), std::ios::app | std::ios::out);
+  history_file_names_.push(file_name);
+  CheckExpireFiles();
+
+  // open new log file
+  stream_.open(file_name.c_str(), std::ios::app | std::ios::out);
 }
 
 void FileLogger::CheckExpireFiles() {
-    // delete expire files
-    while (_history_file_names.size() > _max_file_num) {
-        std::string del_file = _history_file_names.front();
-        _history_file_names.pop();
-        std::remove(del_file.c_str());
-    }
+  // delete expire files
+  while (history_file_names_.size() > max_file_num_) {
+    std::string del_file = history_file_names_.front();
+    history_file_names_.pop();
+    std::remove(del_file.c_str());
+  }
 }
 
-}
+}  // namespace fdan

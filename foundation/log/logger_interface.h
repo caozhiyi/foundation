@@ -2,9 +2,10 @@
 // that can be found in the LICENSE file.
 
 // Author: caozhiyi (caozhiyi5@gmail.com)
+// Copyright <caozhiyi5@gmail.com>
 
-#ifndef QUIC_COMMON_LOG_LOG_INTERFACE
-#define QUIC_COMMON_LOG_LOG_INTERFACE
+#ifndef FOUNDATION_LOG_LOGGER_INTERFACE_H_
+#define FOUNDATION_LOG_LOGGER_INTERFACE_H_
 
 #include <memory>
 #include <cstdint>
@@ -12,30 +13,35 @@
 namespace fdan {
 
 struct Log {
-    char*    _log;
-    uint32_t _len;
+  char*    log;
+  uint32_t len;
 };
 
 // inherit this class to print log.
 // can set subclasses for different print combinations.
 class Logger {
-public:
-    Logger() {}
-    virtual ~Logger() {}
+ public:
+  Logger() {}
+  virtual ~Logger() {}
 
-    void SetLogger(std::shared_ptr<Logger> logger) { _logger = logger; }
-    std::shared_ptr<Logger> GetLogger() { return _logger; }
+  void SetLogger(std::shared_ptr<Logger> logger) { logger_ = logger; }
+  std::shared_ptr<Logger> GetLogger() { return logger_; }
 
-    virtual void Debug(std::shared_ptr<Log>& log) { if(_logger) _logger->Debug(log); }
-    virtual void Info(std::shared_ptr<Log>& log) { if(_logger) _logger->Info(log); }
-    virtual void Warn(std::shared_ptr<Log>& log) { if(_logger) _logger->Warn(log); }
-    virtual void Error(std::shared_ptr<Log>& log) { if(_logger) _logger->Error(log); }
-    virtual void Fatal(std::shared_ptr<Log>& log) { if(_logger) _logger->Fatal(log); }
+  virtual void Debug(const std::shared_ptr<Log>& log)
+    { if (logger_) logger_->Debug(log); }
+  virtual void Info(const std::shared_ptr<Log>& log)
+    { if (logger_) logger_->Info(log); }
+  virtual void Warn(const std::shared_ptr<Log>& log)
+    { if (logger_) logger_->Warn(log); }
+  virtual void Error(const std::shared_ptr<Log>& log)
+    { if (logger_) logger_->Error(log); }
+  virtual void Fatal(const std::shared_ptr<Log>& log)
+    { if (logger_) logger_->Fatal(log); }
 
-protected:
-    std::shared_ptr<Logger> _logger;
+ protected:
+  std::shared_ptr<Logger> logger_;
 };
 
-}
+}  // namespace fdan
 
-#endif
+#endif  // FOUNDATION_LOG_LOGGER_INTERFACE_H_
