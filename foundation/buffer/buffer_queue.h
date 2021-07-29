@@ -64,14 +64,14 @@ class BufferQueue:
   // size: count block_vec's memory, bigger than size.
   // if size = 0, return existing free memory block.
   // return size of free memory.
-  virtual uint32_t GetFreeMemoryBlock(std::vector<Iovec>& block_vec,
+  virtual uint32_t GetFreeMemoryBlock(std::vector<net::Iovec>& block_vec,
     uint32_t size = 0);
 
   // get use memory block,
   // block_vec: memory block vector.
   // return size of use memory.
   // if size = 0, return all used memory block.
-  virtual uint32_t GetUseMemoryBlock(std::vector<Iovec>& block_vec,
+  virtual uint32_t GetUseMemoryBlock(std::vector<net::Iovec>& block_vec,
     uint32_t max_size = 0);
 
   // return can read bytes
