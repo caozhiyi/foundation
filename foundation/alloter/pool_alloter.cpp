@@ -13,8 +13,8 @@
 namespace fdan {
 
 PoolAlloter::PoolAlloter():
-    pool_start_(nullptr),
-    pool_end_(nullptr) {
+  pool_start_(nullptr),
+  pool_end_(nullptr) {
   free_list_.resize(kDefaultNumberOfFreeLists);
   memset(&(*free_list_.begin()), 0,
     sizeof(void*) * kDefaultNumberOfFreeLists);

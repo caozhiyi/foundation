@@ -48,7 +48,7 @@ class PoolAlloter : public Alloter {
 };
 
 #ifdef F_POOL_THREAD_SAFE
-    std::mutex mutex_;
+  std::mutex mutex_;
 #endif
   char*  pool_start_;
   char*  pool_end_;
