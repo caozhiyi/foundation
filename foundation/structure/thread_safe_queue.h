@@ -2,58 +2,60 @@
 // that can be found in the LICENSE file.
 
 // Author: caozhiyi (caozhiyi5@gmail.com)
+// Copyright <caozhiyi5@gmail.com>
 
-#ifndef COMMON_STRUCTURE_THREAD_SAFE_QUEUE
-#define COMMON_STRUCTURE_THREAD_SAFE_QUEUE
+#ifndef FOUNDATION_STRUCTURE_THREAD_SAFE_QUEUE_H_
+#define FOUNDATION_STRUCTURE_THREAD_SAFE_QUEUE_H_
 
 #include <mutex>
 #include <queue>
+#include <utility>
 
 namespace fdan {
 
 template<typename T>
 class ThreadSafeQueue {
-public:
-    ThreadSafeQueue() {}
-    ~ThreadSafeQueue() {}
+ public:
+  ThreadSafeQueue() {}
+  ~ThreadSafeQueue() {}
 
-    void Push(const T& element) {
-        std::unique_lock<std::mutex> lock(_mutex);
-        _queue.push(element);
+  void Push(const T& element) {
+    std::unique_lock<std::mutex> lock(mutex_);
+    queue_.push(element);
+  }
+
+  bool Pop(T& value) {
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (queue_.empty()) {
+      return false;
     }
+    value = std::move(queue_.front());
+    queue_.pop();
+    return true;
+  }
 
-    bool Pop(T& value) {
-        std::unique_lock<std::mutex> lock(_mutex);
-        if (_queue.empty()) {
-            return false;
-        }
-        value = std::move(_queue.front());
-        _queue.pop();
-        return true;
+  void Clear() {
+    std::unique_lock<std::mutex> lock(mutex_);
+    while (!queue_.empty()) {
+      queue_.pop();
     }
+  }
 
-    void Clear() {
-        std::unique_lock<std::mutex> lock(_mutex);
-        while (!_queue.empty()) {
-            _queue.pop();
-        }
-    }
+  size_t Size() {
+    std::unique_lock<std::mutex> lock(mutex_);
+    return queue_.size();
+  }
 
-    size_t Size() {
-        std::unique_lock<std::mutex> lock(_mutex);
-        return _queue.size();
-    }
+  bool Empty() {
+    std::unique_lock<std::mutex> lock(mutex_);
+    return queue_.empty();
+  }
 
-    bool Empty() {
-        std::unique_lock<std::mutex> lock(_mutex);
-        return _queue.empty();
-    }
-
-private:
-    std::mutex           _mutex;
-    std::queue<T>        _queue;
+ private:
+  std::mutex    mutex_;
+  std::queue<T> queue_;
 };
 
-}
+}  // namespace fdan
 
-#endif
+#endif  // FOUNDATION_STRUCTURE_THREAD_SAFE_QUEUE_H_

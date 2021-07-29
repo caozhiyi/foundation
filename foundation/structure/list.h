@@ -2,108 +2,109 @@
 // that can be found in the LICENSE file.
 
 // Author: caozhiyi (caozhiyi5@gmail.com)
+// Copyright <caozhiyi5@gmail.com>
 
-#ifndef COMMON_STRUCTURE_LIST
-#define COMMON_STRUCTURE_LIST
+#ifndef FOUNDATION_STRUCTURE_LIST_H_
+#define FOUNDATION_STRUCTURE_LIST_H_
 
 #include <memory>
 #include <cstdint>
-#include "list_solt.h"
+#include "foundation/structure/list_solt.h"
 
 namespace fdan {
 
 template<typename T>
 class List {
-public:
-    List(): _size(0) {}
-    ~List() {}
+ public:
+  List(): size_(0) {}
+  ~List() {}
 
-    uint32_t Size() { return _size; }
+  uint32_t Size() { return size_; }
 
-    std::shared_ptr<T> GetHead() { return _head; }
-    std::shared_ptr<T> GetTail() { return _tail; }
+  std::shared_ptr<T> GetHead() { return head_; }
+  std::shared_ptr<T> GetTail() { return tail_; }
 
-    void Clear() {
-        _size = 0;
+  void Clear() {
+    size_ = 0;
 
-        _head.reset();
-        _tail.reset();
+    head_.reset();
+    tail_.reset();
+  }
+
+  void PushBack(std::shared_ptr<T> v) {
+    if (!v) {
+      return;
     }
 
-    void PushBack(std::shared_ptr<T> v) {
-        if (!v) {
-            return;
-        }
-    
-        if (!_tail) {
-            _tail = v;
-            _head = v;
+    if (!tail_) {
+      tail_ = v;
+      head_ = v;
 
-        } else {
-            _tail->SetNext(v);
-            v->SetPrev(_tail);
-            _tail = v;
-        }
-        _size++;
+    } else {
+      tail_->SetNext(v);
+      v->SetPrev(tail_);
+      tail_ = v;
+    }
+    size_++;
+  }
+
+  std::shared_ptr<T> PopBack() {
+    if (!tail_) {
+      return nullptr;
     }
 
-    std::shared_ptr<T> PopBack() {
-        if (!_tail) {
-            return nullptr;
-        }
+    auto ret = tail_;
+    tail_ = tail_->GetPrev();
+    if (!tail_) {
+      head_.reset();
 
-        auto ret = _tail;
-        _tail = _tail->GetPrev();
-        if (!_tail) {
-            _head.reset();
+    } else {
+      tail_->SetNext(nullptr);
+    }
+    size_--;
 
-        } else {
-            _tail->SetNext(nullptr);
-        }
-        _size--;
+    return ret;
+  }
 
-        return ret;
+  void PushFront(std::shared_ptr<T> v) {
+    if (!v) {
+      return;
     }
 
-    void PushFront(std::shared_ptr<T> v) {
-        if (!v) {
-            return;
-        }
-    
-        if (!_head) {
-            _tail = v;
-            _head = v;
+    if (!head_) {
+      tail_ = v;
+      head_ = v;
 
-        } else {
-            _head->SetPrev(v);
-            v->SetNext(_head);
-            _head = v;
-        }
-        _size++;
+    } else {
+      head_->SetPrev(v);
+      v->SetNext(head_);
+      head_ = v;
+    }
+    size_++;
+  }
+
+  std::shared_ptr<T> PopFront() {
+    if (!head_) {
+      return nullptr;
     }
 
-    std::shared_ptr<T> PopFront() {
-        if (!_head) {
-            return nullptr;
-        }
-
-        auto ret = _head;
-        _head = _head->GetNext();
-        if (!_head) {
-            _tail.reset();
-        }
-        
-        _size--;
-
-        return ret;
+    auto ret = head_;
+    head_ = head_->GetNext();
+    if (!head_) {
+      tail_.reset();
     }
 
-private:
-    uint32_t _size;
-    std::shared_ptr<T> _head;
-    std::shared_ptr<T> _tail;
+    size_--;
+
+    return ret;
+  }
+
+ private:
+  uint32_t size_;
+  std::shared_ptr<T> head_;
+  std::shared_ptr<T> tail_;
 };
 
-}
+}  // namespace fdan
 
-#endif
+#endif  // FOUNDATION_STRUCTURE_LIST_H_

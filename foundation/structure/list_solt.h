@@ -2,9 +2,10 @@
 // that can be found in the LICENSE file.
 
 // Author: caozhiyi (caozhiyi5@gmail.com)
+// Copyright <caozhiyi5@gmail.com>
 
-#ifndef COMMON_STRUCTURE_LIST_SOLT
-#define COMMON_STRUCTURE_LIST_SOLT
+#ifndef FOUNDATION_STRUCTURE_LIST_SOLT_H_
+#define FOUNDATION_STRUCTURE_LIST_SOLT_H_
 
 #include <memory>
 
@@ -12,21 +13,21 @@ namespace fdan {
 
 template<typename T>
 class ListSolt {
-public:
-    ListSolt() {}
-    virtual ~ListSolt() {}
+ public:
+  ListSolt() {}
+  virtual ~ListSolt() {}
 
-    void SetNext(std::shared_ptr<T> v) { _next = v; }
-    std::shared_ptr<T> GetNext() { return _next; }
+  void SetNext(std::shared_ptr<T> v) { next_ = v; }
+  std::shared_ptr<T> GetNext() { return next_; }
 
-    void SetPrev(std::shared_ptr<T> v) { _prev = v; }
-    std::shared_ptr<T> GetPrev() { return _prev.lock(); }
+  void SetPrev(std::shared_ptr<T> v) { prev_ = v; }
+  std::shared_ptr<T> GetPrev() { return prev_.lock(); }
 
-protected:
-    std::weak_ptr<T>   _prev;
-    std::shared_ptr<T> _next;
+ protected:
+  std::weak_ptr<T>   prev_;
+  std::shared_ptr<T> next_;
 };
 
-}
+}  // namespace fdan
 
-#endif
+#endif  // FOUNDATION_STRUCTURE_LIST_SOLT_H_

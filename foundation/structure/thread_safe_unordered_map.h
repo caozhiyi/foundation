@@ -2,65 +2,67 @@
 // that can be found in the LICENSE file.
 
 // Author: caozhiyi (caozhiyi5@gmail.com)
+// Copyright <caozhiyi5@gmail.com>
 
-#ifndef COMMON_STRUCTURE_THREAD_SAFE_QUEUE
-#define COMMON_STRUCTURE_THREAD_SAFE_QUEUE
+#ifndef FOUNDATION_STRUCTURE_THREAD_SAFE_UNORDERED_MAP_H_
+#define FOUNDATION_STRUCTURE_THREAD_SAFE_UNORDERED_MAP_H_
 
 #include <mutex>
+#include <utility>
 #include <unordered_map>
 
 namespace fdan {
 
 template<typename K, typename V>
 class ThreadSafeUnorderedMap {
-public:
-    ThreadSafeUnorderedMap() {}
-    ~ThreadSafeUnorderedMap() {}
+ public:
+  ThreadSafeUnorderedMap() {}
+  ~ThreadSafeUnorderedMap() {}
 
-    V& operator[] (const K& key) {
-        std::lock_guard<std::mutex> lock(_mutex);
-        return _unordered_map[key];
-    }
+  V& operator[] (const K& key) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return unordered_map_[key];
+  }
 
-    bool Find(const K& key) {
-        std::lock_guard<std::mutex> lock(_mutex);
-        return _unordered_map.find(key) != _unordered_map.end();
-    }
+  bool Find(const K& key) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return unordered_map_.find(key) != unordered_map_.end();
+  }
 
-    void Insert(const std::pair<K, V>& item) {
-        std::lock_guard<std::mutex> lock(_mutex);
-        _unordered_map.insert(item);
-    }
+  void Insert(const std::pair<K, V>& item) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    unordered_map_.insert(item);
+  }
 
-    void Erase(const K& key) {
-        std::lock_guard<std::mutex> lock(_mutex);
-        _unordered_map.erase(key);
-    }
+  void Erase(const K& key) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    unordered_map_.erase(key);
+  }
 
-    void Clear() {
-        std::lock_guard<std::mutex> lock(_mutex);
-        _unordered_map.clear();
-    }
+  void Clear() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    unordered_map_.clear();
+  }
 
-    size_t Size() {
-        std::lock_guard<std::mutex> lock(_mutex);
-        return _unordered_map.size();
-    }
+  size_t Size() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return unordered_map_.size();
+  }
 
-    bool Empty() {
-        std::lock_guard<std::mutex> lock(_mutex);
-        return _unordered_map.empty();
-    }
+  bool Empty() {
+    std::lock_guard<std::mutex> lock(mutex_);
+    return unordered_map_.empty();
+  }
 
-    std::unordered_map<K, V>& GetMap() {
-        return _unordered_map;
-    }
+  std::unordered_map<K, V>& GetMap() {
+    return unordered_map_;
+  }
 
-private:
-    std::unordered_map<K, V> _unordered_map;
-    std::mutex               _mutex;
+ private:
+  std::unordered_map<K, V> unordered_map_;
+  std::mutex         mutex_;
 };
 
-}
+}  // namespace fdan
 
-#endif
+#endif  // FOUNDATION_STRUCTURE_THREAD_SAFE_UNORDERED_MAP_H_
