@@ -2,26 +2,28 @@
 // that can be found in the LICENSE file.
 
 // Author: caozhiyi (caozhiyi5@gmail.com)
+// Copyright <caozhiyi5@gmail.com>
 
-#ifndef COMMON_UTIL_SINGLETON
-#define COMMON_UTIL_SINGLETON
+#ifndef FOUNDATION_UTIL_SINGLETON_H_
+#define FOUNDATION_UTIL_SINGLETON_H_
 
 namespace fdan {
 
 template<typename T>
 class Singleton {
-public:
-    static T& Instance() {
-        static T instance;
-        return instance;
-    }
+ public:
+  static T& Instance() {
+    static T instance;
+    return instance;
+  }
 
-protected:
-    Singleton(const Singleton&) {}
-    Singleton& operator = (const Singleton&) {}
-    Singleton() {}
-    virtual ~Singleton() {}
+ protected:
+  Singleton(const Singleton&) {}
+  Singleton& operator = (const Singleton&) {}
+  Singleton() {}
+  virtual ~Singleton() {}
 };
 
-}
-#endif
+}  // namespace fdan
+
+#endif  // FOUNDATION_UTIL_SINGLETON_H_

@@ -2,9 +2,10 @@
 // that can be found in the LICENSE file.
 
 // Author: caozhiyi (caozhiyi5@gmail.com)
+// Copyright <caozhiyi5@gmail.com>
 
-#ifndef COMMON_UTIL_OS_RETURN
-#define COMMON_UTIL_OS_RETURN
+#ifndef FOUNDATION_UTIL_OS_RETURN_H_
+#define FOUNDATION_UTIL_OS_RETURN_H_
 
 #include <cstdint>
 
@@ -12,13 +13,13 @@ namespace fdan {
 
 template <typename T>
 struct SysCallResult {
-  T _return_value;
-  int32_t _errno;
+  T return_value;
+  int32_t errno;
 };
 
 using SysCallInt32Result = SysCallResult<int32_t>;
 using SysCallInt64Result = SysCallResult<int64_t>;
 
-}
+}  // namespace fdan
 
-#endif
+#endif  // FOUNDATION_UTIL_OS_RETURN_H_

@@ -2,26 +2,23 @@
 // that can be found in the LICENSE file.
 
 // Author: caozhiyi (caozhiyi5@gmail.com)
+// Copyright <caozhiyi5@gmail.com>
 
 #include <random>
-#include "random.h"
+#include "foundation/util/random.h"
 
 namespace fdan {
 
-std::random_device RangeRandom::_random;
-std::mt19937 RangeRandom::_engine(_random());
+std::random_device RangeRandom::random_;
+std::mt19937 RangeRandom::engine_(_random());
 
 RangeRandom::RangeRandom(int32_t min, int32_t max):
-    _uniform(min, max) {
+    uniform_(min, max) {}
 
-}
-
-RangeRandom::~RangeRandom() {
-
-}
+RangeRandom::~RangeRandom() {}
 
 int32_t RangeRandom::Random() {
-    return _uniform(_engine);
+    return uniform_(engine_);
 }
 
-}
+}  // namespace fdan

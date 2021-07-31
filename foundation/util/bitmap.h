@@ -2,9 +2,10 @@
 // that can be found in the LICENSE file.
 
 // Author: caozhiyi (caozhiyi5@gmail.com)
+// Copyright <caozhiyi5@gmail.com>
 
-#ifndef COMMON_UTIL_BITMAP
-#define COMMON_UTIL_BITMAP
+#ifndef FOUNDATION_UTIL_BITMAP_H_
+#define FOUNDATION_UTIL_BITMAP_H_
 
 #include <vector>
 #include <cstdint>
@@ -14,36 +15,36 @@ namespace fdan {
 // bitmap base on array.
 // find next valid bit in O(1) time.
 class Bitmap {
-public:
-    Bitmap();
-    ~Bitmap();
+ public:
+  Bitmap();
+  ~Bitmap();
 
-    // init whit array size.
-    // one size means bitmap support 64 bit set.
-    bool Init(uint32_t size);
+  // init whit array size.
+  // one size means bitmap support 64 bit set.
+  bool Init(uint32_t size);
 
-    // return false if input param more than bitmap support size.
-    bool Insert(uint32_t index);
+  // return false if input param more than bitmap support size.
+  bool Insert(uint32_t index);
 
-    // return true even the bit is not in bitmap
-    bool Remove(uint32_t index);
-    
-    // get min index after input param
-    // if return -1, means the bitmap has no value
-    int32_t GetMinAfter(uint32_t index = 0);
+  // return true even the bit is not in bitmap
+  bool Remove(uint32_t index);
 
-    // bitmap is empty
-    bool Empty();
+  // get min index after input param
+  // if return -1, means the bitmap has no value
+  int32_t GetMinAfter(uint32_t index = 0);
 
-    void Clear();
+  // bitmap is empty
+  bool Empty();
 
-private:
-    // which index of vector used
-    uint32_t _vec_bitmap;
-    // all bit
-    std::vector<int64_t> _bitmap;
+  void Clear();
+
+ private:
+  // which index of vector used
+  uint32_t vec_bitmap_;
+  // all bit
+  std::vector<int64_t> bitmap_;
 };
 
-}
+}  // namespace fdan
 
-#endif
+#endif  // FOUNDATION_UTIL_BITMAP_H_
