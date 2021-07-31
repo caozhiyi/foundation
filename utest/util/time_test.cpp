@@ -8,8 +8,8 @@ TEST(time_utest, get_time1) {
     std::cout << fdan::UTCTimeMsec() << std::endl;
     std::cout << fdan::GetFormatTime() << std::endl;
 
-    char buf[fdan::__format_time_buf_size] = {0};
-    uint32_t size = fdan::__format_time_buf_size;
+    char buf[fdan::kFormatTimeBufSize] = {0};
+    uint32_t size = fdan::kFormatTimeBufSize;
     fdan::GetFormatTime(buf, size);
     std::cout << buf << std::endl;
 }

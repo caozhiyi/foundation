@@ -26,7 +26,7 @@ static uint32_t FormatLog(const char* file, uint32_t line,
   uint32_t curlen = snprintf(buf, len, "[%s|", level);
 
   // format time
-  uint32_t size = __format_time_buf_size;
+  uint32_t size = kFormatTimeBufSize;
   GetFormatTime(buf + curlen, size);
   curlen += size;
 

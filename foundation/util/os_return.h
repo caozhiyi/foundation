@@ -14,7 +14,7 @@ namespace fdan {
 template <typename T>
 struct SysCallResult {
   T return_value;
-  int32_t errno;
+  int32_t err;
 };
 
 using SysCallInt32Result = SysCallResult<int32_t>;

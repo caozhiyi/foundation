@@ -4,8 +4,8 @@
 // Author: caozhiyi (caozhiyi5@gmail.com)
 // Copyright <caozhiyi5@gmail.com>
 
-#ifndef FOUNDATION_NETWORK_IO_HANDLE_H_
-#define FOUNDATION_NETWORK_IO_HANDLE_H_
+#ifndef FOUNDATION_NETWORK_NET_HANDLE_H_
+#define FOUNDATION_NETWORK_NET_HANDLE_H_
 
 #include <cstdint>
 #include "foundation/util/os_return.h"
@@ -49,4 +49,4 @@ SysCallInt32Result Readv(int64_t sockfd, Iovec *vec, uint32_t vec_len);
 }  // namespace net
 }  // namespace fdan
 
-#endif  // FOUNDATION_NETWORK_IO_HANDLE_H_
+#endif  // FOUNDATION_NETWORK_NET_HANDLE_H_

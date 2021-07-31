@@ -10,7 +10,7 @@
 namespace fdan {
 
 std::random_device RangeRandom::random_;
-std::mt19937 RangeRandom::engine_(_random());
+std::mt19937 RangeRandom::engine_(random_());
 
 RangeRandom::RangeRandom(int32_t min, int32_t max):
     uniform_(min, max) {}
