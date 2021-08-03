@@ -26,7 +26,7 @@ else()
   list(APPEND CXX_FLAGS "-m64")
 endif()
 
-include_directories(.)
+include_directories(${PROJECT_SOURCE_DIR})
 aux_source_directory(${PROJECT_SOURCE_DIR}/foundation/alloter src_files)
 aux_source_directory(${PROJECT_SOURCE_DIR}/foundation/buffer src_files)
 aux_source_directory(${PROJECT_SOURCE_DIR}/foundation/log src_files)
@@ -49,10 +49,14 @@ ELSEIF (UNIX)
 ENDIF ()
 
 # output
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 
 add_library(${PROJECT_NAME} STATIC ${src_files})
 
+# use whit cmake -DWITH_TEST=ON
+option(WITH_TEST "build unit test executable file."  OFF)
+if(WITH_TEST)
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 add_subdirectory(third/gtest)
 add_subdirectory(utest)
+endif(WITH_TEST)
