@@ -39,8 +39,8 @@ class Address {
   friend std::ostream& operator<< (std::ostream &out, Address &addr);
   friend bool operator==(const Address &addr1, const Address &addr2);
 
+  static bool IsIpv4(const std::string& ip);
  private:
-  bool IsIpv4(const std::string& ip);
   std::string ToIpv6(const std::string& ip);
   std::string ToIpv4(const std::string& ip);
 
