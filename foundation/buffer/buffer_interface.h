@@ -12,10 +12,10 @@
 namespace fdan {
 
 class BlockMemoryPool;
-class InnerBuffer {
+class Buffer {
  public:
-  InnerBuffer() {}
-  virtual ~InnerBuffer() {}
+  Buffer() {}
+  virtual ~Buffer() {}
 
   // read to res buf but don't change the read point
   // return read size
@@ -44,9 +44,9 @@ class InnerBuffer {
   // return can read bytes
   virtual uint32_t FindStr(const char* s, uint32_t s_len) = 0;
 
-  virtual uint32_t Read(std::shared_ptr<InnerBuffer> buffer,
+  virtual uint32_t Read(std::shared_ptr<Buffer> buffer,
     uint32_t len = 0) = 0;
-  virtual uint32_t Write(std::shared_ptr<InnerBuffer> buffer,
+  virtual uint32_t Write(std::shared_ptr<Buffer> buffer,
     uint32_t len = 0) = 0;
 
   // move read point
