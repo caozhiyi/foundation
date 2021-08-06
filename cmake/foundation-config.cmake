@@ -1,0 +1,14 @@
+message("find foundation lib")
+
+# set include path
+set(FOUNDATION_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/foundation)
+message("header dir ${FOUNDATION_INCLUDE_DIR}")
+
+# set lib path
+# set(FOUNDATION_LIBRARY ${LIBRARY_OUTPUT_PATH})
+find_library(FOUNDATION_LIBRARY foundation ${CMAKE_SOURCE_DIR})
+message("lib dir ${FOUNDATION_LIBRARY}")
+
+if(FOUNDATION_INCLUDE_DIR AND FOUNDATION_LIBRARY)
+    set(FOUNDATION_FOUND TRUE)
+endif(FOUNDATION_INCLUDE_DIR AND FOUNDATION_LIBRARY)
